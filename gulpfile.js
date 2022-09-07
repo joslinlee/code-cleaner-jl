@@ -7,7 +7,12 @@ gulp.task("default", async () => {
   return console.log(`
 
       Hello, human.
-      For full list of commands use: npm run info
+      I am Ebee version 1.00
+      an automation tool developed to format your code 
+      and prepare it for upload into the PimaOnline template system.
+
+      To clean your code run the command "npm run clean".
+    
   
     `);
 });
@@ -15,8 +20,8 @@ gulp.task("default", async () => {
 gulp.task("info", async () => {
   return console.log(`
 
-      Clean code: npm run clean
-      Log error: npm run error
+    npm run start - Displays latest news and info.    
+    npm run clean - Runs the command to clean your code.
   
     `);
 });
@@ -32,7 +37,7 @@ gulp.task("clean", async () => {
   }))
   // remove empty elements
   .pipe(dom(function () {
-    const par = this.querySelectorAll("div, span, h1, h2, h3, h4, h5, h6, p, strong")
+    const par = this.querySelectorAll("div, span, h1, h2, h3, h4, h5, h6, p, strong, em")
     return par.forEach((e) => {
       if(e.textContent == "") e.remove()
     })
@@ -65,5 +70,3 @@ gulp.task("clean", async () => {
     .pipe(beautify.reporter())
     .pipe(gulp.dest("_output"));
 });
-
-//remove empty elements
