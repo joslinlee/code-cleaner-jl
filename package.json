@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "gulp clean",
     "start": "gulp",
     "clean": "gulp clean"
   },
