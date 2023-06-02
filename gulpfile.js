@@ -1,6 +1,18 @@
 const gulp = require("gulp");
 const dom = require("gulp-dom");
 const beautify = require("gulp-jsbeautifier");
+const path = require('path');
+const through2 = require('through2');
+const { JSDOM } = require('jsdom');
+
+const invalidIframesMsg = "Pages contain invalid iframes:"
+const invalidContentBodiesMsg = "Pages contain invalid content-body:"
+const hasDeprecatedWidgetsMsg = "Pages contain deprecated widgets:"
+
+const filesWithInvalidIframes = new Set();
+const filesWithInvalidContentBody = new Set();
+const filesWithDeprecatedWidgets = new Set();
+const deprecatedClasses = ["video-container"]; 
 
 // Say Hi
 gulp.task("default", async () => {
@@ -28,6 +40,94 @@ gulp.task("info", async () => {
 
 gulp.task("clean", async () => {
   return gulp.src("_input/**/*.html")
+  // Log if iframes exist outside of media container
+  .pipe(
+    through2.obj(function (file, _, cb) {
+      if (file.isBuffer()) {
+        let html = file.contents.toString();
+        let dom = new JSDOM(html);
+        let doc = dom.window.document;
+
+        let iframes = doc.querySelectorAll("iframe");
+        let invalidIframes = Array.from(iframes).filter((iframe) => {
+          let parent = iframe.parentElement;
+          while (parent != null) {
+            if (parent.tagName.toLowerCase() === "div" && parent.getAttribute("class") === "media-object") {
+              return false;
+            }
+            parent = parent.parentElement;
+          }
+          return true;
+        });
+
+        if (invalidIframes.length > 0) {
+          filesWithInvalidIframes.add(` > ${file.path}`);
+        }
+
+        file.contents = Buffer.from(dom.serialize());
+      }
+      cb(null, file);
+    })
+  )
+  // Check for .content-body
+  .pipe(
+    through2.obj(function (file, _, cb) {
+      if (file.isBuffer()) {
+        let html = file.contents.toString();
+        let dom = new JSDOM(html);
+        let doc = dom.window.document;
+
+        let contentBodies = doc.querySelectorAll(".content-body");
+        let invalidContentBodies = Array.from(contentBodies).filter((contentBody) => {
+          let parent = contentBody.parentElement;
+          while (parent != null) {
+            if (parent.tagName.toLowerCase() === "div") {
+              let parentID = parent.getAttribute("id");  // Get the id attribute instead of class
+              if (parentID === "content-wrapper" || parentID === "second-column" || parentID === "third-column") {
+                return false;
+              }
+            }
+            parent = parent.parentElement;
+          }
+          return true;
+        });
+
+        if (invalidContentBodies.length > 0) {
+          filesWithInvalidContentBody.add(` > ${file.path}`);
+        }
+
+        file.contents = Buffer.from(dom.serialize());
+      }
+      cb(null, file);
+    })
+  ) 
+  // check for page errors
+  // check for deprecated widgets
+  .pipe(
+    through2.obj(function (file, _, cb) {
+      if (file.isBuffer()) {
+        let html = file.contents.toString();
+        let dom = new JSDOM(html);
+        let doc = dom.window.document;
+        
+        let hasDeprecatedWidgets = deprecatedClasses.some(deprecatedClass => {
+          let elements = doc.getElementsByClassName(deprecatedClass);
+          return elements.length > 0;
+        });
+
+        if (hasDeprecatedWidgets) {
+          filesWithDeprecatedWidgets.add(` > ${file.path}`);
+        }
+
+        file.contents = Buffer.from(dom.serialize());
+      }
+      cb(null, file);
+    })
+  )  
+  // check tables
+
+  // Match title with h1
+
   // remove elements with "&nbsp" as inner-text
   .pipe(dom(function () {
     const par = this.querySelectorAll("p")
@@ -68,5 +168,26 @@ gulp.task("clean", async () => {
       extra_liners: [] 
     }))
     .pipe(beautify.reporter())
-    .pipe(gulp.dest("_output"));
+    .pipe(gulp.dest("_output"))
+    //== Log messages
+    .on('end', () => {
+      if (filesWithInvalidIframes.size > 0) {
+        console.log(`1. ${invalidIframesMsg}`);
+        for (const file of filesWithInvalidIframes) {
+          console.log(file);
+        }
+      }
+      if (filesWithInvalidContentBody.size > 0) {
+        console.log(`2. ${invalidContentBodiesMsg}`);
+        for (const file of filesWithInvalidContentBody) {
+          console.log(file);
+        }
+      }
+      if (filesWithDeprecatedWidgets.size > 0) {
+        console.log(`3. ${hasDeprecatedWidgetsMsg}`);
+        for (const file of filesWithDeprecatedWidgets) {
+          console.log(file);
+        }
+      }
+    });
 });
