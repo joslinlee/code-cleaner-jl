@@ -310,6 +310,30 @@ gulp.task("clean", () =>
         cb(null, file);
       })
     )
+    // Check for images without alt attribute
+    .pipe(
+      through2.obj(function (file, _, cb) {
+        if (file.isBuffer()) {
+          let html = file.contents.toString();
+          let dom = new JSDOM(html);
+          let doc = dom.window.document;
+
+          // Check all <img> elements for an alt attribute
+          let imgElements = doc.querySelectorAll("img");
+          Array.from(imgElements).forEach((img) => {
+            if (!img.hasAttribute("alt")) {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push("An <img> element is missing its alt attribute");
+            }
+          });
+
+          file.contents = Buffer.from(dom.serialize());
+        }
+        cb(null, file);
+      })
+    )
 
 
     // .pipe(
