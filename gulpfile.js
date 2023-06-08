@@ -10,6 +10,9 @@ let fileErrors = {};
 const filesWithMissingHeaderOrContentWrapperMsg = "Missing <header> with class 'header' or <div> with id 'content-wrapper'";
 const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within a <div> with class 'media-object')";
 const invalidYtPanoptoTitleMsg = "Invalid iframes detected (Incorrect title attribute)";
+const nestedContentBodiesMsg = "Invalid '.content-body' (Nested within another .content-body)";
+const invalidContentBodyMsg = "A 'content-body' is not inside #content-wrapper, #second-column, or #third-column";
+const deprecatedClassOrIdMsg = "Contains deprecated class or id";
 
 gulp.task("default", async () => {
   console.log(`
@@ -32,6 +35,7 @@ gulp.task("info", async () => {
 gulp.task("clean", () =>
   gulp
     .src("_input/**/*.html")
+    // check for doctype and missing <html>
     .pipe(
       through2.obj(function (file, enc, cb) {
         if (file.isBuffer()) {
@@ -59,6 +63,7 @@ gulp.task("clean", () =>
         cb(null, file);
       })
     )
+    //check for header and content-wrapper
     .pipe(
       through2.obj(function (file, enc, cb) {
         if (file.isBuffer()) {
@@ -117,7 +122,7 @@ gulp.task("clean", () =>
         cb(null, file);
       })
     )
-    //
+    // Log if iframes include "youtube video player"
     .pipe(
       through2.obj(function (file, _, cb) {
         if (file.isBuffer()) {
@@ -141,7 +146,84 @@ gulp.task("clean", () =>
         cb(null, file);
       })
     )
+    // Check for .content-body.
+    // Log if any are nested within another .content-body
+    // Log if any are not inside #content-wrapper, #second-column, or #third-column
+    .pipe(
+      through2.obj(function (file, _, cb) {
+        if (file.isBuffer()) {
+          let html = file.contents.toString();
+          let dom = new JSDOM(html);
+          let doc = dom.window.document;
     
+          let contentBodies = doc.querySelectorAll(".content-body");
+          Array.from(contentBodies).forEach((contentBody) => {
+            // Check for nested "content-body" divs not only in direct children but in any descendant
+            let nestedContentBodies = contentBody.querySelectorAll(".content-body");
+            if (nestedContentBodies.length > 0) {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push(nestedContentBodiesMsg);
+            }
+    
+            // Check if content-body is not inside #content-wrapper, #second-column, or #third-column
+            let parent = contentBody.parentElement;
+            let validParentFound = false;
+            while (parent != null) {
+              if (parent.tagName.toLowerCase() === "div" && 
+                  (parent.getAttribute("id") === "content-wrapper" || 
+                   parent.getAttribute("id") === "second-column" || 
+                   parent.getAttribute("id") === "third-column")) {
+                validParentFound = true;
+                break;
+              }
+              parent = parent.parentElement;
+            }
+            if (!validParentFound) {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push(invalidContentBodyMsg);
+            }
+          });
+    
+          file.contents = Buffer.from(dom.serialize());
+        }
+        cb(null, file);
+      })
+    )
+
+    // Check for deprecated widgets
+    .pipe(
+      through2.obj(function (file, _, cb) {
+        if (file.isBuffer()) {
+          let html = file.contents.toString();
+          let dom = new JSDOM(html);
+          let doc = dom.window.document;
+
+          // Array of classes and IDs to search for
+          let classAndIdsToFind = ["video-container"];
+    
+          classAndIdsToFind.forEach(item => {
+            let classElements = doc.getElementsByClassName(item);
+            let idElements = doc.getElementById(item);
+    
+            if (classElements.length > 0 || idElements) {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push(`${deprecatedClassOrIdMsg} (${item})`);
+            }
+          });
+
+          file.contents = Buffer.from(dom.serialize());
+        }
+        cb(null, file);
+      })
+    )    
+
+
 
     // .pipe(
     //   dom(function () {

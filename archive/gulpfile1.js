@@ -145,7 +145,7 @@ gulp.task("clean", async () => {
         })
       )
 
-      // Check iframes for iframwith youtube title
+      // Check iframes for iframe with youtube title
       .pipe(
         through2.obj(function (file, _, cb) {
           if (file.isBuffer()) {
@@ -228,7 +228,7 @@ gulp.task("clean", async () => {
 			)
 			// Check tables.
       /// Log if <table> does not contain .display-lg
-      /// Log if structure does not contain thead > tr > th
+      /// Log if structure does not contain thead > tr > th > remidner: scope=col
       .pipe(
         through2.obj(function (file, _, cb) {
           if (file.isBuffer()) {
