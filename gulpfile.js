@@ -222,6 +222,59 @@ gulp.task("clean", () =>
         cb(null, file);
       })
     )    
+    // Check tables.
+    /// Log if <table> does not contain .display-lg
+    /// Log if structure does not contain thead > tr > th > remidner: scope=col
+    .pipe(
+      through2.obj(function (file, _, cb) {
+        if (file.isBuffer()) {
+          let html = file.contents.toString();
+          let dom = new JSDOM(html);
+          let doc = dom.window.document;
+
+          // Check all tables for .display-lg
+          let tables = doc.querySelectorAll("table");
+          tables.forEach((table) => {
+            if (!table.classList.contains('display-lg')) {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push("A table does not contain '.display-lg'");
+            }
+          });
+
+          // Check for specific table structure
+          tables.forEach((table) => {
+            let thead = table.querySelector("thead");
+            if (thead) {
+              let tr = thead.querySelector("tr");
+              if (tr) {
+                let tds = tr.querySelectorAll("td[scope='col']");
+                if (tds.length === 0) {
+                  if (!fileErrors[file.path]) {
+                    fileErrors[file.path] = [];
+                  }
+                  fileErrors[file.path].push("A table does not contain the correct structure (missing <td scope='col'> within <thead>)");
+                }
+              } else {
+                if (!fileErrors[file.path]) {
+                  fileErrors[file.path] = [];
+                }
+                fileErrors[file.path].push("A table does not contain the correct structure (missing <tr> within <thead>)");
+              }
+            } else {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push("A table does not contain the correct structure (missing <thead>)");
+            }
+          });
+
+          file.contents = Buffer.from(dom.serialize());
+        }
+        cb(null, file);
+      })
+    )
 
 
 
