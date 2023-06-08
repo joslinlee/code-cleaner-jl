@@ -275,7 +275,41 @@ gulp.task("clean", () =>
         cb(null, file);
       })
     )
+    // Check for matching <title> and <h1>
+    .pipe(
+      through2.obj(function (file, _, cb) {
+        if (file.isBuffer()) {
+          let html = file.contents.toString();
+          let dom = new JSDOM(html);
+          let doc = dom.window.document;
 
+          // Check if <title> and <h1> match
+          let title = doc.querySelector("title");
+          let h1 = doc.querySelector("h1");
+
+          // Make sure both elements exist before comparing them
+          if (title && h1) {
+            let titleText = title.textContent.trim();
+            let h1Text = h1.textContent.trim();
+
+            if (titleText !== h1Text) {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push("<title> and <h1> do not match");
+            }
+          } else {
+            if (!fileErrors[file.path]) {
+              fileErrors[file.path] = [];
+            }
+            fileErrors[file.path].push("Missing <title> or <h1> element");
+          }
+
+          file.contents = Buffer.from(dom.serialize());
+        }
+        cb(null, file);
+      })
+    )
 
 
     // .pipe(
