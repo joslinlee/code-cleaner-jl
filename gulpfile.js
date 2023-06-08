@@ -249,12 +249,12 @@ gulp.task("clean", () =>
             if (thead) {
               let tr = thead.querySelector("tr");
               if (tr) {
-                let tds = tr.querySelectorAll("th[scope='col']");
-                if (tds.length === 0) {
+                let ths = tr.querySelectorAll("th[scope='col']");
+                if (ths.length === 0) {
                   if (!fileErrors[file.path]) {
                     fileErrors[file.path] = [];
                   }
-                  fileErrors[file.path].push("A table does not contain the correct structure (missing <td scope='col'> within <thead>)");
+                  fileErrors[file.path].push("A table does not contain the correct structure (missing <th scope='col'> within <thead>)");
                 }
               } else {
                 if (!fileErrors[file.path]) {
