@@ -249,7 +249,7 @@ gulp.task("clean", () =>
             if (thead) {
               let tr = thead.querySelector("tr");
               if (tr) {
-                let tds = tr.querySelectorAll("td[scope='col']");
+                let tds = tr.querySelectorAll("th[scope='col']");
                 if (tds.length === 0) {
                   if (!fileErrors[file.path]) {
                     fileErrors[file.path] = [];
