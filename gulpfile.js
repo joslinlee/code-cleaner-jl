@@ -149,6 +149,32 @@ gulp.task("clean", () =>
 				cb(null, file);
 			})
 		)
+    // Check for h5p resizer
+    .pipe(
+      through2.obj(function(file, enc, cb){
+      const missingH5pResizerMsg = "Invalid H5P activity (missing H5P resizer js)";
+
+      if(file.isBuffer()){
+        let htmlString = file.contents.toString();
+        let dom = new JSDOM(htmlString);
+        let document = dom.window.document;
+        let iframes = Array.from(document.querySelectorAll("iframe"));
+        let h5pIframes = iframes.filter(iframe => iframe.getAttribute("src").startsWith("https://pima.h5p.com"));
+        if(h5pIframes.length > 0){
+          let script = document.querySelector('head > script[src="https://pima.h5p.com/js/h5p-resizer.js"][charset="UTF-8"][defer]');
+          if(!script){
+            if(!fileErrors[file.path]){
+              fileErrors[file.path] = [];
+            }
+            fileErrors[file.path].push(missingH5pResizerMsg);
+          }
+        }
+        file.contents = Buffer.from(dom.serialize());
+      }
+      cb(null, file);
+    }))
+
+
 		// check for .content-body
 		// log if any are nested within another .content-body
 		// log if any are not inside #content-wrapper, #second-column, or #third-column
