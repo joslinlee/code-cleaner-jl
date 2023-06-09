@@ -5,17 +5,9 @@ const	path = require("path");
 const	through2 = require("through2");
 const	{ JSDOM } = require("jsdom");
 
-let deprecatedClassOrId = ["main", "main-two-column", "sidebar", "video-container"];
+
 let fileErrors = {};
 
-const missingHTMLMsg = "Missing html lang attribute or lang is not 'en'";
-const missingDoctypeMsg = "Missing DOCTYPE or DOCTYPE is not html";
-const filesWithMissingHeaderOrContentWrapperMsg = "Missing <header> with class 'header' or <div> with id 'content-wrapper'";
-const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within a <div> with class 'media-object')";
-const invalidYtPanoptoTitleMsg = "Invalid iframes detected (Incorrect title attribute)";
-const nestedContentBodiesMsg = "Invalid '.content-body' (Nested within another .content-body)";
-const invalidContentBodyMsg = "A 'content-body' is not inside #content-wrapper, #second-column, or #third-column";
-const deprecatedClassOrIdMsg = "Contains deprecated class or id";
 
 gulp.task("default", async () => {
 	console.log(`
@@ -41,6 +33,9 @@ gulp.task("clean", () =>
 		// check for doctype and missing <html>
 		.pipe(
 			through2.obj(function (file, enc, cb) {
+        const missingHTMLMsg = "Missing html lang attribute or lang is not 'en'";
+        const missingDoctypeMsg = "Missing DOCTYPE or DOCTYPE is not html";
+
 				if (file.isBuffer()) {
 					let content = file.contents.toString();
 					let dom = new JSDOM(content, { includeNodeLocations: true });
@@ -69,6 +64,8 @@ gulp.task("clean", () =>
 		// check for missing <header class="header"> or #content-wrapper
 		.pipe(
 			through2.obj(function (file, enc, cb) {
+        const filesWithMissingHeaderOrContentWrapperMsg = "Missing <header> with class 'header' or <div> with id 'content-wrapper'";
+
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
 					let dom = new JSDOM(html);
@@ -92,6 +89,8 @@ gulp.task("clean", () =>
 		// check for youtube or panopto iframes that exist outside of .media-container
 		.pipe(
 			through2.obj(function (file, enc, cb) {
+        const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within a <div> with class 'media-object')";
+
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
 					let dom = new JSDOM(html);
@@ -128,6 +127,8 @@ gulp.task("clean", () =>
 		// Check for iframes that include title="youtube video player"
 		.pipe(
 			through2.obj(function (file, _, cb) {
+        const invalidYtPanoptoTitleMsg = "Invalid iframes detected (Incorrect title attribute)";
+
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
 					let dom = new JSDOM(html);
@@ -180,6 +181,9 @@ gulp.task("clean", () =>
 		// log if any are not inside #content-wrapper, #second-column, or #third-column
 		.pipe(
 			through2.obj(function (file, _, cb) {
+        const nestedContentBodiesMsg = "Invalid '.content-body' (Nested within another .content-body)";
+        const invalidContentBodyMsg = "A 'content-body' is not inside #content-wrapper, #second-column, or #third-column";
+
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
 					let dom = new JSDOM(html);
@@ -222,6 +226,10 @@ gulp.task("clean", () =>
 		// check for deprecated widgets, classes, or id's
 		.pipe(
 			through2.obj(function (file, _, cb) {
+        //Array for deprecated class or id
+        let deprecatedClassOrId = ["main", "main-two-column", "sidebar", "video-container"];
+        const deprecatedClassOrIdMsg = "Contains deprecated class or id";
+        
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
 					let dom = new JSDOM(html);
