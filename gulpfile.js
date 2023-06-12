@@ -30,11 +30,70 @@ gulp.task("info", async () => {
 gulp.task("clean", () =>
 	gulp
 		.src("_input/**/*.html")
+    .pipe(
+			beautify({
+				indent_size: 2,
+				wrap_attributes: false,
+				extra_liners: [],
+			})
+		)
+    .pipe(beautify.reporter())
+		// Start Automations
+		// remove elements with "&nbsp" as inner-text
+		.pipe(
+			dom(function () {
+				const par = this.querySelectorAll("p");
+				return par.forEach((e) => {
+					if (e.textContent == "\xa0") e.remove();
+				});
+			})
+		)
+		// remove empty elements
+		.pipe(
+			dom(function () {
+				const par = this.querySelectorAll("span, h1, h2, h3, h4, h5, h6, p, strong, em");
+				return par.forEach((e) => {
+					if (e.textContent == "") e.remove();
+				});
+			})
+		)
+		.pipe(
+			dom(function () {
+				const discardTextAttributes = (textElement, ...attributes) => attributes.forEach((attribute) => textElement.removeAttribute(attribute));
+				return this.querySelectorAll("h1, h2, h3, h4, h5, h6, p, ul, ol, li, dl, dt, dd").forEach((elem) => discardTextAttributes(elem, "width", "style"));
+			})
+		)
+		.pipe(
+			dom(function () {
+				const discardElemAttributes = (element, ...attributes) => attributes.forEach((attribute) => element.removeAttribute(attribute));
+				return this.querySelectorAll("body, div, span, bold, em").forEach((elem) => discardElemAttributes(elem, "style"));
+			})
+		)
+		.pipe(
+			dom(function () {
+				const discardTableAttributes = (tableElement, ...tableAttributes) => tableAttributes.forEach((tableAttribute) => tableElement.removeAttribute(tableAttribute));
+				return this.querySelectorAll("table, thead, tbody, tfoot, tr, th, td").forEach((tableElem) => discardTableAttributes(tableElem, "cellspacing", "cellpadding", "width", "style"));
+			})
+		)
+		.pipe(
+			dom(function () {
+				const discardTargetSelf = (element, ...attributes) => attributes.forEach((attribute) => element.removeAttribute(attribute));
+				return this.querySelectorAll('[target="_self"], [target="_new"]').forEach((tableElem) => discardTargetSelf(tableElem, "target"));
+			})
+		)
+		.pipe(
+			dom(function () {
+				const discardRolePres = (element, ...attributes) => attributes.forEach((attribute) => element.removeAttribute(attribute));
+				return this.querySelectorAll('[role="presentation"]').forEach((tableElem) => discardRolePres(tableElem, "role"));
+			})
+		)    
+    //==============
+    //==============
 		// check for doctype and missing <html>
 		.pipe(
 			through2.obj(function (file, enc, cb) {
-        const missingHTMLMsg = "Missing html lang attribute or lang is not 'en'";
-        const missingDoctypeMsg = "Missing DOCTYPE or DOCTYPE is not html";
+        const missingHTMLMsg = "Missing <html lang='en'>";
+        const missingDoctypeMsg = "Missing <!DOCTYPE html>";
 
 				if (file.isBuffer()) {
 					let content = file.contents.toString();
@@ -62,9 +121,10 @@ gulp.task("clean", () =>
 			})
 		)
 		// check for missing <header class="header"> or #content-wrapper
+    // note: split these up
 		.pipe(
 			through2.obj(function (file, enc, cb) {
-        const filesWithMissingHeaderOrContentWrapperMsg = "Missing <header> with class 'header' or <div> with id 'content-wrapper'";
+        const filesWithMissingHeaderOrContentWrapperMsg = "Missing <header class='header' or <div id='content-wrapper'>";
 
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
@@ -89,7 +149,7 @@ gulp.task("clean", () =>
 		// check for youtube or panopto iframes that exist outside of .media-container
 		.pipe(
 			through2.obj(function (file, enc, cb) {
-        const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within a <div> with class 'media-object')";
+        const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within '.media-contaner')";
 
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
@@ -127,7 +187,7 @@ gulp.task("clean", () =>
 		// Check for iframes that include title="youtube video player"
 		.pipe(
 			through2.obj(function (file, _, cb) {
-        const invalidYtPanoptoTitleMsg = "Invalid iframes detected (Incorrect title attribute)";
+        const invalidYtPanoptoTitleMsg = "Invalid iframes detected (incorrect title attribute)";
 
 				if (file.isBuffer()) {
 					let html = file.contents.toString();
@@ -181,7 +241,7 @@ gulp.task("clean", () =>
 		// log if any are not inside #content-wrapper, #second-column, or #third-column
 		.pipe(
 			through2.obj(function (file, _, cb) {
-        const nestedContentBodiesMsg = "Invalid '.content-body' (Nested within another .content-body)";
+        const nestedContentBodiesMsg = "An invalid '.content-body' (nested within another '.content-body')";
         const invalidContentBodyMsg = "A 'content-body' is not inside #content-wrapper, #second-column, or #third-column";
 
 				if (file.isBuffer()) {
@@ -227,7 +287,7 @@ gulp.task("clean", () =>
 		.pipe(
 			through2.obj(function (file, _, cb) {
         //Array for deprecated class or id
-        let deprecatedClassOrId = ["main", "main-two-column", "sidebar", "video-container"];
+        let deprecatedClassOrId = ["main", "main-two-column", "sidebar"];
         const deprecatedClassOrIdMsg = "Contains deprecated class or id";
         
 				if (file.isBuffer()) {
@@ -375,63 +435,6 @@ gulp.task("clean", () =>
 				cb(null, file);
 			})
 		)
-		// Start Automations
-		// remove elements with "&nbsp" as inner-text
-		.pipe(
-			dom(function () {
-				const par = this.querySelectorAll("p");
-				return par.forEach((e) => {
-					if (e.textContent == "\xa0") e.remove();
-				});
-			})
-		)
-		// remove empty elements
-		.pipe(
-			dom(function () {
-				const par = this.querySelectorAll("div, span, h1, h2, h3, h4, h5, h6, p, strong, em");
-				return par.forEach((e) => {
-					if (e.textContent == "") e.remove();
-				});
-			})
-		)
-		.pipe(
-			dom(function () {
-				const discardTextAttributes = (textElement, ...attributes) => attributes.forEach((attribute) => textElement.removeAttribute(attribute));
-				return this.querySelectorAll("h1, h2, h3, h4, h5, h6, p, ul, ol, li, dl, dt, dd").forEach((elem) => discardTextAttributes(elem, "width", "style"));
-			})
-		)
-		.pipe(
-			dom(function () {
-				const discardElemAttributes = (element, ...attributes) => attributes.forEach((attribute) => element.removeAttribute(attribute));
-				return this.querySelectorAll("body, div, span, bold, em").forEach((elem) => discardElemAttributes(elem, "style"));
-			})
-		)
-		.pipe(
-			dom(function () {
-				const discardTableAttributes = (tableElement, ...tableAttributes) => tableAttributes.forEach((tableAttribute) => tableElement.removeAttribute(tableAttribute));
-				return this.querySelectorAll("table, thead, tbody, tfoot, tr, th, td").forEach((tableElem) => discardTableAttributes(tableElem, "cellspacing", "cellpadding", "width", "style"));
-			})
-		)
-		.pipe(
-			dom(function () {
-				const discardTargetSelf = (element, ...attributes) => attributes.forEach((attribute) => element.removeAttribute(attribute));
-				return this.querySelectorAll('[target="_self"], [target="_new"]').forEach((tableElem) => discardTargetSelf(tableElem, "target"));
-			})
-		)
-		.pipe(
-			dom(function () {
-				const discardRolePres = (element, ...attributes) => attributes.forEach((attribute) => element.removeAttribute(attribute));
-				return this.querySelectorAll('[role="presentation"]').forEach((tableElem) => discardRolePres(tableElem, "role"));
-			})
-		)
-		.pipe(
-			beautify({
-				indent_size: 2,
-				wrap_attributes: false,
-				extra_liners: [],
-			})
-		)
-		.pipe(beautify.reporter())
 		.pipe(gulp.dest("_output"))
 		.on("end", () => {
 			let fileCount = 1; // Initialize a counter
