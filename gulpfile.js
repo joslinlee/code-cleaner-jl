@@ -29,7 +29,7 @@ gulp.task("info", async () => {
 
 gulp.task("clean", () =>
 	gulp
-		.src("_input/**/*.html")
+    .src("_input/**/*.{html,htm}")
     .pipe(
 			beautify({
 				indent_size: 2,
