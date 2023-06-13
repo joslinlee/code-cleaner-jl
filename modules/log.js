@@ -366,6 +366,7 @@ export function log() {
         for (let error of fileErrors[filePath]) {
           console.log(` > ${error}`);
         }
+        console.log('--------------------------------------------------');
         fileCount++; // Increment the counter after each file
       }
     });
