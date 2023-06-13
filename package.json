@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "gulp clean",
-    "start": "gulp",
+    "dev": "gulp",
+    "start": "gulp clean && gulp log",
+    "log": "gulp log",
     "clean": "gulp clean"
   },
   "author": "Francisco Reynoso",
   "license": "MIT",
+  "type": "module",
   "devDependencies": {
     "gulp": "^4.0.2",
     "gulp-cli": "^2.3.0",
