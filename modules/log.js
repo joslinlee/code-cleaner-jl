@@ -8,7 +8,7 @@ export function log() {
   gulp.task("log", async () => {
     const stream = gulp
       .src("_input/**/*.{html,htm}")
-      // check for doctype and missing <html>
+      // check for DOCTYPE and missing <html>
       .pipe(
         through2.obj(function (file, enc, cb) {
           const missingHTMLMsg = "Missing <html lang='en'>";
@@ -39,36 +39,45 @@ export function log() {
           cb(null, file);
         })
       )
+      
       // check for missing <header class="header"> or #content-wrapper
-      // note: split these up
       .pipe(
         through2.obj(function (file, enc, cb) {
-          const filesWithMissingHeaderOrContentWrapperMsg = "Missing <header class='header' or <div id='content-wrapper'>";
-  
+          const missingHeaderMsg = "Missing <header class='header'></div>";
+          const missingContentWrapperMsg = "Missing '#content-wrapper'";
+      
           if (file.isBuffer()) {
             let html = file.contents.toString();
             let dom = new JSDOM(html);
             let doc = dom.window.document;
-  
+      
             let headerElement = doc.querySelector("header.header");
             let divElement = doc.querySelector("div#content-wrapper");
-  
-            if (!headerElement || !divElement) {
+      
+            if (!headerElement) {
               if (!fileErrors[file.path]) {
                 fileErrors[file.path] = [];
               }
-              fileErrors[file.path].push(filesWithMissingHeaderOrContentWrapperMsg);
+              fileErrors[file.path].push(missingHeaderMsg);
             }
-  
+      
+            if (!divElement) {
+              if (!fileErrors[file.path]) {
+                fileErrors[file.path] = [];
+              }
+              fileErrors[file.path].push(missingContentWrapperMsg);
+            }
+      
             file.contents = Buffer.from(dom.serialize());
           }
           cb(null, file);
         })
       )
+      
       // check for youtube or panopto iframes that exist outside of .media-container
       .pipe(
         through2.obj(function (file, enc, cb) {
-          const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within '.media-contaner')";
+          const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within '.media-container')";
   
           if (file.isBuffer()) {
             let html = file.contents.toString();
@@ -103,6 +112,7 @@ export function log() {
           cb(null, file);
         })
       )
+
       // Check for iframes that include title="youtube video player"
       .pipe(
         through2.obj(function (file, _, cb) {
@@ -129,6 +139,7 @@ export function log() {
           cb(null, file);
         })
       )
+
       // Check for h5p resizer
       .pipe(
         through2.obj(function (file, enc, cb) {
@@ -202,6 +213,7 @@ export function log() {
           cb(null, file);
         })
       )
+
       // check for deprecated widgets, classes, or id's
       .pipe(
         through2.obj(function (file, _, cb) {
@@ -234,11 +246,14 @@ export function log() {
           cb(null, file);
         })
       )
+
       // check tables
       // log if <table> does not contain .display-lg
       // log if structure does not contain thead > tr > th scope="col"
       .pipe(
         through2.obj(function (file, _, cb) {
+          const tableMissingDisplayLgMsg = "A table does not contain '.display-lg'";
+
           if (file.isBuffer()) {
             let html = file.contents.toString();
             let dom = new JSDOM(html);
@@ -251,7 +266,7 @@ export function log() {
                 if (!fileErrors[file.path]) {
                   fileErrors[file.path] = [];
                 }
-                fileErrors[file.path].push("A table does not contain '.display-lg'");
+                fileErrors[file.path].push(tableMissingDisplayLgMsg);
               }
             });
             // Check for specific table structure
@@ -290,6 +305,7 @@ export function log() {
           cb(null, file);
         })
       )
+
       // check for matching <title> and <h1>
       .pipe(
         through2.obj(function (file, _, cb) {
@@ -328,6 +344,7 @@ export function log() {
           cb(null, file);
         })
       )
+
       // check for images without alt attribute
       .pipe(
         through2.obj(function (file, _, cb) {
