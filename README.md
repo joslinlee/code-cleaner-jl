@@ -4,7 +4,7 @@ This code cleaner app is a code cleaning automation tool designed to format and 
 
 ## Version 
 
-0.1.0
+0.1.1
 
 ## Dependencies
 
