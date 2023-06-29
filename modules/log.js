@@ -1,391 +1,187 @@
-import gulp from "gulp";
-import { JSDOM } from "jsdom";
-import through2 from "through2";
+import t from "gulp";
+import { JSDOM as e } from "jsdom";
+import n from "through2";
+import path from 'path';
 
 export function log() {
-  let fileErrors = {};
+    let o = {};
 
-  gulp.task("log", async () => {
-    const stream = gulp
-      .src("_input/**/*.{html,htm}")
-      // check for DOCTYPE and missing <html>
-      .pipe(
-        through2.obj(function (file, enc, cb) {
-          const missingHTMLMsg = "Missing <html lang='en'>";
-          const missingDoctypeMsg = "Missing <!DOCTYPE html>";
-  
-          if (file.isBuffer()) {
-            let content = file.contents.toString();
-            let dom = new JSDOM(content, { includeNodeLocations: true });
-            let document = dom.window.document;
-  
-            if (!document.doctype || "html" !== document.doctype.name.toLowerCase()) {
-              if (!fileErrors[file.path]) {
-                fileErrors[file.path] = [];
-              }
-              fileErrors[file.path].push(missingDoctypeMsg);
-            }
-  
-            let html = document.querySelector("html");
-            if (!html || "en" !== html.getAttribute("lang")) {
-              if (!fileErrors[file.path]) {
-                fileErrors[file.path] = [];
-              }
-              fileErrors[file.path].push(missingHTMLMsg);
-            }
-  
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
-      
-      // check for missing <header class="header"> or #content-wrapper
-      .pipe(
-        through2.obj(function (file, enc, cb) {
-          const missingHeaderMsg = "Missing <header class='header'></div>";
-          const missingContentWrapperMsg = "Missing '#content-wrapper'";
-      
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-      
-            let headerElement = doc.querySelector("header.header");
-            let divElement = doc.querySelector("div#content-wrapper");
-      
-            if (!headerElement) {
-              if (!fileErrors[file.path]) {
-                fileErrors[file.path] = [];
-              }
-              fileErrors[file.path].push(missingHeaderMsg);
-            }
-      
-            if (!divElement) {
-              if (!fileErrors[file.path]) {
-                fileErrors[file.path] = [];
-              }
-              fileErrors[file.path].push(missingContentWrapperMsg);
-            }
-      
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
-      
-      // check for youtube or panopto iframes that exist outside of .media-container
-      .pipe(
-        through2.obj(function (file, enc, cb) {
-          const filesWithInvalidIframesMsg = "Invalid iframes detected (not contained within '.media-container')";
-  
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-  
-            let iframes = doc.querySelectorAll("iframe");
-            let invalidIframes = Array.from(iframes).filter((iframe) => {
-              let src = iframe.getAttribute("src");
-              if (src && (src.includes("https://www.youtube.com") || src.includes("https://pima-cc.hosted.panopto.com"))) {
-                let parent = iframe.parentElement;
-                while (parent != null) {
-                  if (parent.tagName.toLowerCase() === "div" && parent.getAttribute("class") === "media-object") {
-                    return false;
-                  }
-                  parent = parent.parentElement;
-                }
-                return true;
-              }
-              return false;
-            });
-  
-            if (invalidIframes.length > 0) {
-              if (!fileErrors[file.path]) {
-                fileErrors[file.path] = [];
-              }
-              fileErrors[file.path].push(filesWithInvalidIframesMsg);
-            }
-  
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
+    t.task("log", async () => {
+        let i = t.src("_input/**/*.{html,htm}").pipe(n.obj(function(t, n, i) {
+            if(t.isBuffer()){
+                let r = t.contents.toString(),
+                l = new e(r, { includeNodeLocations: true }),
+                a = l.window.document;
 
-      // Check for iframes that include title="youtube video player"
-      .pipe(
-        through2.obj(function (file, _, cb) {
-          const invalidYtPanoptoTitleMsg = "Invalid iframes detected (incorrect title attribute)";
-  
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-  
-            // Check if the document contains an <iframe> with title "YouTube video player"
-            let iframeElement = Array.from(doc.querySelectorAll("iframe")).find((iframe) => iframe.title.includes("YouTube video player"));
-  
-            // If such an iframe is present, add the file path to the fileErrors object with appropriate message
-            if (iframeElement) {
-              if (!fileErrors[file.path]) {
-                fileErrors[file.path] = [];
-              }
-              fileErrors[file.path].push(invalidYtPanoptoTitleMsg);
-            }
-  
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
+                // Check for doctype
+                a.doctype && "html" === a.doctype.name.toLowerCase() || (o[t.path] || (o[t.path] = []), o[t.path].push("Missing <!DOCTYPE html>"));
 
-      // Check for h5p resizer
-      .pipe(
-        through2.obj(function (file, enc, cb) {
-          const missingH5pResizerMsg = "Invalid H5P activity (missing H5P resizer js)";
-  
-          if (file.isBuffer()) {
-            let htmlString = file.contents.toString();
-            let dom = new JSDOM(htmlString);
-            let document = dom.window.document;
-            let iframes = Array.from(document.querySelectorAll("iframe"));
-            let h5pIframes = iframes.filter((iframe) => iframe.getAttribute("src").startsWith("https://pima.h5p.com"));
-            if (h5pIframes.length > 0) {
-              let script = document.querySelector('head > script[src="https://pima.h5p.com/js/h5p-resizer.js"][charset="UTF-8"][defer]');
-              if (!script) {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(missingH5pResizerMsg);
-              }
-            }
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
-  
-      // check for .content-body
-      // log if any are nested within another .content-body
-      // log if any are not inside #content-wrapper, #second-column, or #third-column
-      .pipe(
-        through2.obj(function (file, _, cb) {
-          const nestedContentBodiesMsg = "An invalid '.content-body' (nested within another '.content-body')";
-          const invalidContentBodyMsg = "A 'content-body' is not inside #content-wrapper, #second-column, or #third-column";
-  
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-  
-            let contentBodies = doc.querySelectorAll(".content-body");
-            Array.from(contentBodies).forEach((contentBody) => {
-              // Check for nested "content-body" divs not only in direct children but in any descendant
-              let nestedContentBodies = contentBody.querySelectorAll(".content-body");
-              if (nestedContentBodies.length > 0) {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(nestedContentBodiesMsg);
-              }
-  
-              // Check if content-body is not inside #content-wrapper, #second-column, or #third-column
-              let parent = contentBody.parentElement;
-              let validParentFound = false;
-              while (parent != null) {
-                if (parent.tagName.toLowerCase() === "div" && (parent.getAttribute("id") === "content-wrapper" || parent.getAttribute("id") === "second-column" || parent.getAttribute("id") === "third-column")) {
-                  validParentFound = true;
-                  break;
-                }
-                parent = parent.parentElement;
-              }
-              if (!validParentFound) {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(invalidContentBodyMsg);
-              }
-            });
-  
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
+                // Check for lang attribute
+                let s = a.querySelector("html");
+                s && "en" === s.getAttribute("lang") || (o[t.path] || (o[t.path] = []), o[t.path].push("Missing <html lang='en'>"));
 
-      // check for deprecated widgets, classes, or id's
-      .pipe(
-        through2.obj(function (file, _, cb) {
-          //Array for deprecated class or id
-          let deprecatedClassOrId = ["main", "main-two-column", "sidebar", "video-container"];
-          const deprecatedClassOrIdMsg = "Contains deprecated class or id";
-  
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-  
-            // Array of classes and IDs to search for
-            let classAndIdsToFind = deprecatedClassOrId;
-  
-            classAndIdsToFind.forEach((item) => {
-              let classElements = doc.getElementsByClassName(item);
-              let idElements = doc.getElementById(item);
-  
-              if (classElements.length > 0 || idElements) {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(`${deprecatedClassOrIdMsg} (${item})`);
-              }
-            });
-  
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
+                // Check for header
+                let c = a.querySelector("header.header");
+                c || (o[t.path] || (o[t.path] = []), o[t.path].push("Missing <header class='header'></div>"));
 
-      // check tables
-      // log if <table> does not contain .display-lg
-      // log if structure does not contain thead > tr > th scope="col"
-      .pipe(
-        through2.obj(function (file, _, cb) {
-          const tableMissingDisplayLgMsg = "A table does not contain '.display-lg'";
+                // Check for content-wrapper
+                let u = a.querySelector("div#content-wrapper");
+                u || (o[t.path] || (o[t.path] = []), o[t.path].push("Missing '#content-wrapper'"));
 
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-  
-            // Check all tables for .display-lg
-            let tables = doc.querySelectorAll("table");
-            tables.forEach((table) => {
-              if (!table.classList.contains("display-lg")) {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(tableMissingDisplayLgMsg);
-              }
-            });
-            // Check for specific table structure
-            tables.forEach((table) => {
-              const tableMissingThMsg = "A table does not contain the correct structure (missing <th scope='col'> within <thead>)";
-              const tableMissingTrMsg = "A table does not contain the correct structure (missing <tr> within <thead>)";
-              const tableMissingTheadMsg = "A table does not contain the correct structure (missing <thead>)";
-  
-              let thead = table.querySelector("thead");
-              if (thead) {
-                let tr = thead.querySelector("tr");
-                if (tr) {
-                  let ths = tr.querySelectorAll("th[scope='col']");
-                  if (ths.length === 0) {
-                    if (!fileErrors[file.path]) {
-                      fileErrors[file.path] = [];
+                // Check for iframes
+                let f = Array.from(a.querySelectorAll("iframe")).filter(t => {
+                    let e = t.getAttribute("src");
+                    if(e && (e.includes("https://www.youtube.com") || e.includes("https://pima-cc.hosted.panopto.com"))){
+                        let n = t.parentElement;
+                        for(; null != n;){
+                            if("div" === n.tagName.toLowerCase() && "media-object" === n.getAttribute("class")) return false;
+                            n = n.parentElement;
+                        }
+                        return true;
                     }
-                    fileErrors[file.path].push(tableMissingThMsg);
+                    return false;
+                });
+                f.length > 0 && (o[t.path] || (o[t.path] = []), o[t.path].push("Invalid iframes detected (not contained within '.media-container')"));
+
+                // Check if the document contains an <iframe> with title "YouTube video player"
+                let iframeElement = Array.from(a.querySelectorAll("iframe")).find((iframe) => iframe.title.includes("YouTube video player"));
+                if (iframeElement) {
+                  o[t.path] || (o[t.path] = []);
+                  o[t.path].push("Invalid iframes detected (incorrect title attribute)");
+                }
+
+                // Check for H5P iframes and missing H5P resizer script
+                let iframes = Array.from(a.querySelectorAll("iframe"));
+                let h5pIframes = iframes.filter((iframe) => iframe.getAttribute("src").startsWith("https://pima.h5p.com"));
+                if (h5pIframes.length > 0) {
+                  let script = a.querySelector('head > script[src="https://pima.h5p.com/js/h5p-resizer.js"][charset="UTF-8"][defer]');
+                  if (!script) {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push("Invalid H5P activity (missing H5P resizer js)");
+                  }
+                }
+
+                // Check for invalid .content-body
+                let contentBodies = a.querySelectorAll(".content-body");
+                Array.from(contentBodies).forEach((contentBody) => {
+                  // Check for nested "content-body" divs not only in direct children but in any descendant
+                  let nestedContentBodies = contentBody.querySelectorAll(".content-body");
+                  if (nestedContentBodies.length > 0) {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push("An invalid '.content-body' (nested within another '.content-body')");
+                  }
+
+                  // Check if content-body is not inside #content-wrapper, #second-column, or #third-column
+                  let parent = contentBody.parentElement;
+                  let validParentFound = false;
+                  while (parent != null) {
+                    if (parent.tagName.toLowerCase() === "div" && (parent.getAttribute("id") === "content-wrapper" || parent.getAttribute("id") === "second-column" || parent.getAttribute("id") === "third-column")) {
+                      validParentFound = true;
+                      break;
+                    }
+                    parent = parent.parentElement;
+                  }
+                  if (!validParentFound) {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push("A 'content-body' is not inside #content-wrapper, #second-column, or #third-column");
+                  }
+                });
+
+                // Check for deprecated widgets, classes, or ids
+                let deprecatedClassOrId = ["main", "main-two-column", "sidebar", "video-container"];
+                let classAndIdsToFind = deprecatedClassOrId;
+
+                classAndIdsToFind.forEach((item) => {
+                  let classElements = a.getElementsByClassName(item);
+                  let idElements = a.getElementById(item);
+
+                  if (classElements.length > 0 || idElements) {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push(`Contains deprecated class or id (${item})`);
+                  }
+                });
+
+                // ...
+
+                // Check tables
+                let tables = a.querySelectorAll("table");
+
+                tables.forEach((table) => {
+                  if (!table.classList.contains("display-lg")) {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push("A table does not contain '.display-lg'");
+                  }
+                });
+
+                // Check for specific table structure
+                tables.forEach((table) => {
+                  const tableMissingThMsg = "A table does not contain the correct structure (missing <th scope='col'> within <thead>)";
+                  const tableMissingTrMsg = "A table does not contain the correct structure (missing <tr> within <thead>)";
+                  const tableMissingTheadMsg = "A table does not contain the correct structure (missing <thead>)";
+
+                  let thead = table.querySelector("thead");
+                  if (thead) {
+                    let tr = thead.querySelector("tr");
+                    if (tr) {
+                      let ths = tr.querySelectorAll("th[scope='col']");
+                      if (ths.length === 0) {
+                        o[t.path] || (o[t.path] = []);
+                        o[t.path].push(tableMissingThMsg);
+                      }
+                    } else {
+                      o[t.path] || (o[t.path] = []);
+                      o[t.path].push(tableMissingTrMsg);
+                    }
+                  } else {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push(tableMissingTheadMsg);
+                  }
+                });
+
+                // Check for matching <title> and <h1>
+                let title = a.querySelector("title");
+                let h1 = a.querySelector("h1");
+
+                // Make sure both elements exist before comparing them
+                if (title && h1) {
+                  let titleText = title.textContent.trim();
+                  let h1Text = h1.textContent.trim();
+
+                  if (titleText !== h1Text) {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push("<title> and <h1> do not match");
                   }
                 } else {
-                  if (!fileErrors[file.path]) {
-                    fileErrors[file.path] = [];
+                  o[t.path] || (o[t.path] = []);
+                  o[t.path].push("Missing <title> or <h1> element");
+                }         
+                
+                // Check for images without alt attribute
+                let imgElements = a.querySelectorAll("img");
+                Array.from(imgElements).forEach((img) => {
+                  if (!img.hasAttribute("alt")) {
+                    o[t.path] || (o[t.path] = []);
+                    o[t.path].push("An <img> element is missing its alt attribute");
                   }
-                  fileErrors[file.path].push(tableMissingTrMsg);
-                }
-              } else {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(tableMissingTheadMsg);
-              }
-            });
-  
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
+                });                
 
-      // check for matching <title> and <h1>
-      .pipe(
-        through2.obj(function (file, _, cb) {
-          const mismatchedTitleAndH1Msg = "<title> and <h1> do not match";
-          const missingTitleOrH1Msg = "Missing <title> or <h1> element";
-  
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-  
-            // Check if <title> and <h1> match
-            let title = doc.querySelector("title");
-            let h1 = doc.querySelector("h1");
-  
-            // Make sure both elements exist before comparing them
-            if (title && h1) {
-              let titleText = title.textContent.trim();
-              let h1Text = h1.textContent.trim();
-  
-              if (titleText !== h1Text) {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(mismatchedTitleAndH1Msg);
-              }
-            } else {
-              if (!fileErrors[file.path]) {
-                fileErrors[file.path] = [];
-              }
-              fileErrors[file.path].push(missingTitleOrH1Msg);
+                // ...
+                // Continue adding the remaining checks here in the same pattern as above...
+                // ...
+
+                t.contents = Buffer.from(l.serialize());
             }
-  
-            file.contents = Buffer.from(dom.serialize());
-          }
-          cb(null, file);
-        })
-      )
+            i(null,t);
+        })).pipe(n.obj(function(t,e,n){n(null,t)}));
 
-      // check for images without alt attribute
-      .pipe(
-        through2.obj(function (file, _, cb) {
-          const missingImgAltMsg = "An <img> element is missing its alt attribute";
-  
-          if (file.isBuffer()) {
-            let html = file.contents.toString();
-            let dom = new JSDOM(html);
-            let doc = dom.window.document;
-  
-            // Check all <img> elements for an alt attribute
-            let imgElements = doc.querySelectorAll("img");
-            Array.from(imgElements).forEach((img) => {
-              if (!img.hasAttribute("alt")) {
-                if (!fileErrors[file.path]) {
-                  fileErrors[file.path] = [];
-                }
-                fileErrors[file.path].push(missingImgAltMsg);
-              }
-            });
-  
-            file.contents = Buffer.from(dom.serialize());
+        i.on("finish", () => {
+          let tt = 1;
+          for(let e in o){
+              let relativePath = path.relative('_input', e);
+              for(let n of (console.log(`${tt}. Errors in file "${relativePath}":`), o[e])) console.log(` > ${n}`);
+              console.log("--------------------------------------------------"), tt++;
           }
-          cb(null, file);
-        })
-      )
-      .pipe(
-        through2.obj(function (file, _, cb) {
-          cb(null, file);
-        })
-      );
-    stream.on("finish", () => {
-      let fileCount = 1; // Initialize a counter
-      for (let filePath in fileErrors) {
-        console.log(`${fileCount}. Errors in file ${filePath}:`);
-        for (let error of fileErrors[filePath]) {
-          console.log(` > ${error}`);
-        }
-        console.log('--------------------------------------------------');
-        fileCount++; // Increment the counter after each file
-      }
+      })
+      
     });
-  });
 }
