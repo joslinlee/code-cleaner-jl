@@ -2,10 +2,6 @@
 
 This code cleaner app is a code cleaning automation tool designed to format and log errors for the markup used to build courses with the PimaOnline Themepack.    
 
-## Version 
-
-0.1.1
-
 ## Dependencies
 
 - node.js
