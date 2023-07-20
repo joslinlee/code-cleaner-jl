@@ -1,13 +1,13 @@
 {
   "name": "code-cleaner",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "This code cleaner app is a code cleaning automation tool designed to format and log errors for the markup used to build courses with the PimaOnline Themepack.",
   "main": "index.js",
   "scripts": {
     "dev": "gulp",
-    "start": "gulp clean && gulp log",
+    "start": "gulp clean-copy && gulp log",
     "log": "gulp log",
-    "clean": "gulp clean"
+    "clean": "gulp clean-copy"
   },
   "author": "Francisco Reynoso",
   "license": "MIT",
