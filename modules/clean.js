@@ -82,4 +82,12 @@ export function clean() {
       // output files
 			.pipe(gulp.dest("_output"));
 	});
+
+  gulp.task("copy", async () => {
+    gulp.src(["_input/**/*", "!_input/**/*.{html,htm}"])
+      .pipe(gulp.dest("_output"));
+  });
+
+  gulp.task("clean-copy", gulp.series("clean", "copy"));
+
 }
