@@ -12,6 +12,7 @@ import { checkIframes } from "./log/checkIframes.js"
 import { checkImgAlt } from "./log/checkImgAlt.js"
 import { checkTables } from "./log/checkTables.js"
 import { checkTitleAndH1 } from "./log/checkTitleAndH1.js"
+import { checkIframeTitles } from './log/checkIframeTitles.js';
 
 export function log() {
   let errors = {};
@@ -29,6 +30,7 @@ export function log() {
           checkHeader(document, file.path, errors);
           checkContentWrapper(document, file.path, errors);
           checkIframes(document, file.path, errors);
+          checkIframeTitles(document, file.path, errors);
           checkContentBody(document, file.path, errors);
           checkDeprecatedClasses(document, file.path, errors);
           checkTables(document, file.path, errors);
