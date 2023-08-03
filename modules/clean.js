@@ -8,24 +8,24 @@ export function clean() {
 			.src("_input/**/*.{html,htm}")
 
 			// remove elements with "&nbsp" as inner-text
-			.pipe(
-				dom(function () {
-					const par = this.querySelectorAll("p");
-					return par.forEach((e) => {
-						if (e.textContent == "\xa0") e.remove();
-					});
-				})
-			)
+			// .pipe(
+			// 	dom(function () {
+			// 		const par = this.querySelectorAll("p");
+			// 		return par.forEach((e) => {
+			// 			if (e.textContent == "\xa0") e.remove();
+			// 		});
+			// 	})
+			// )
 
 			// remove empty elements
-			.pipe(
-				dom(function () {
-					const par = this.querySelectorAll("span, h1, h2, h3, h4, h5, h6, p, strong, em");
-					return par.forEach((e) => {
-						if (e.textContent == "") e.remove();
-					});
-				})
-			)
+			// .pipe(
+			// 	dom(function () {
+			// 		const par = this.querySelectorAll("span, h1, h2, h3, h4, h5, h6, p, strong, em");
+			// 		return par.forEach((e) => {
+			// 			if (e.textContent == "") e.remove();
+			// 		});
+			// 	})
+			// )
 
       // remove 'width' and 'style' attributes from text elements
 			.pipe(
