@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "gulp",
-    "start": "gulp clean-copy && gulp log",
+    "start": "gulp clean-copy && gulp log && gulp check-image-sizes",
     "log": "gulp log",
     "clean": "gulp clean-copy"
   },
@@ -19,6 +19,8 @@
     "gulp-jsbeautifier": "^3.0.1"
   },
   "dependencies": {
+    "gulp-filter": "^9.0.1",
+    "gulp-size": "^5.0.0",
     "jsdom": "^22.1.0"
   }
 }
