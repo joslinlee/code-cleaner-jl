@@ -33,7 +33,6 @@ export function imageCheck() {
 					cb(null, file);
 				})
 			)
-			.pipe(size({ showFiles: true }))
 			// Restore all files
 			.pipe(imageFilter.restore)
 			// Log errors
