@@ -14,6 +14,7 @@ import { checkTables } from "./log/checkTables.js"
 import { checkTitleAndH1 } from "./log/checkTitleAndH1.js"
 import { checkIframeTitles } from './log/checkIframeTitles.js';
 import { checkPanoptoWrapper } from './log/checkPanoptoContainer.js';
+import { checkHeadings } from './log/checkHeadings.js';
 
 export function log() {
   let errors = {};
@@ -28,6 +29,7 @@ export function log() {
 
           checkDoctype(document, file.path, errors);
           checkHtmlLang(document, file.path, errors);
+					checkHeadings(document, file.path, errors);
           checkHeader(document, file.path, errors);
           checkContentWrapper(document, file.path, errors);
           checkIframes(document, file.path, errors);
