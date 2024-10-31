@@ -3,11 +3,11 @@ export function checkHeadings(document, filePath, errors) {
   let previousLevel = 0;
 	let h1Count = 0;
 
-  // Initialize errors array for the file if it doesn't exist
-  if (!errors[filePath]) errors[filePath] = [];
-
 	// Check if <h1> is present as the document title and <h2> follows
 	if (!headings.length || headings[0].tagName !== "H1") {
+		if (!errors[filePath]) {
+			errors[filePath] = [];
+		}
 		errors[filePath].push(`Invalid heading structure (document must start with an <h1> heading).`);
 	}
 
@@ -19,12 +19,18 @@ export function checkHeadings(document, filePath, errors) {
 		if(level === 1) {
 			h1Count++;
 			if(h1Count > 1) {
+				if (!errors[filePath]) {
+					errors[filePath] = [];
+				}
 				errors[filePath].push(`Invalid heading structure (more than one <h1> heading found).`);
 			}
 		}
 
     // Check if heading levels skip (e.g., <h2> followed directly by <h4>)
     if (level > previousLevel + 1 && previousLevel !== 0) {
+			if (!errors[filePath]) {
+        errors[filePath] = [];
+      }
 				errors[filePath].push(
 					`Invalid heading structure (<${heading.tagName.toLowerCase()}> found after <h${previousLevel}>).`
 				);
