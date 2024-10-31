@@ -1,60 +1,36 @@
 export function checkHeadings(document, filePath, errors) {
-  // Get all content bodies
-  const contentBodies = document.querySelectorAll('.content-body');
+  const headings = Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+  let previousLevel = 0;
+	let h1Count = 0;
 
-  // Loop over each content body separately, including an index for numbering
-  contentBodies.forEach((contentBody, index) => {
-    const contentBodyNumber = index + 1; // Start numbering from 1
-    const headings = [];
-    let h2Count = 0; // Counter for <h2> headings
-    let previousLevel = 2; // Reset to h2 for each content body
+  // Initialize errors array for the file if it doesn't exist
+  if (!errors[filePath]) errors[filePath] = [];
 
-    // Traverse the content body and collect headings
-    const traverse = (node) => {
-      if (node.tagName && /^h[1-6]$/.test(node.tagName.toLowerCase())) {
-        const tag = node.tagName.toLowerCase();
-        const level = parseInt(tag[1]); // Extract the level (e.g., 'h3' -> 3)
-        headings.push({ tag, level, node });
+	// Check if <h1> is present as the document title and <h2> follows
+	if (!headings.length || headings[0].tagName !== "H1") {
+		errors[filePath].push(`Invalid heading structure (document must start with an <h1> heading).`);
+	}
 
-        // Count <h2> tags
-        if (level === 2) h2Count++;
-      }
+	// Loop through each heading and check for errors
+  headings.forEach((heading) => {
+    const level = parseInt(heading.tagName[1]);
 
-      // Recursively traverse child nodes
-      for (let child of node.children) {
-        traverse(child);
-      }
-    };
+		// Check if there are more than two <h1> headings
+		if(level === 1) {
+			h1Count++;
+			if(h1Count > 1) {
+				errors[filePath].push(`Invalid heading structure (more than one <h1> heading found).`);
+			}
+		}
 
-    traverse(contentBody); // Start traversing this content body
-
-    // Initialize errors array for the file if it doesn't exist
-    if (!errors[filePath]) errors[filePath] = [];
-
-    // Check that the content body starts with <h2>
-    if (headings.length === 0) {
-      errors[filePath].push(`Content body #${contentBodyNumber}: Invalid heading structure (no heading found).`);
-    } else if (headings[0].level !== 2) {
-      errors[filePath].push(
-        `Content body #${contentBodyNumber}: Invalid heading structure (expected <h2> at the beginning, but found <${headings[0].tag}>).`
-      );
+    // Check if heading levels skip (e.g., <h2> followed directly by <h4>)
+    if (level > previousLevel + 1 && previousLevel !== 0) {
+				errors[filePath].push(
+					`Invalid heading structure (<${heading.tagName.toLowerCase()}> found after <h${previousLevel}>).`
+				);
     }
 
-    // Check for multiple <h2> tags in the same content body
-    if (h2Count > 1) {
-      errors[filePath].push(
-        `Content body #${contentBodyNumber}: Invalid heading structure (only one <h2> is allowed, but found ${h2Count}).`
-      );
-    }
-
-    // Validate heading structure within the current content body
-    headings.forEach(({ level, tag }) => {
-      if (level > previousLevel + 1) {
-        errors[filePath].push(
-          `Content body #${contentBodyNumber}: Invalid heading structure (<${tag}> found after <h${previousLevel}>).`
-        );
-      }
-      previousLevel = level;
-    });
+    // Update previousLevel to current heading level
+    previousLevel = level;
   });
 }
