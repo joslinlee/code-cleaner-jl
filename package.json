@@ -6,19 +6,19 @@
 	"scripts": {
 		"dev": "gulp",
 		"start": "gulp clean-copy && gulp log",
-		"log": "gulp log",
-		"clean": "gulp clean-copy"
-	},
-	"author": "Francisco Reynoso",
-	"license": "MIT",
-	"type": "module",
-	"devDependencies": {
-		"gulp": "^4.0.2",
-		"gulp-cli": "^2.3.0",
-		"gulp-dom": "^1.0.0",
-		"gulp-jsbeautifier": "^3.0.1"
-	},
-	"dependencies": {
-		"jsdom": "^22.1.0"
-	}
+    "log": "gulp log",
+    "clean": "gulp clean-copy"
+  },
+  "author": "Francisco Reynoso",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-cli": "^2.3.0",
+    "gulp-dom": "^1.0.0",
+    "gulp-jsbeautifier": "^3.0.1"
+  },
+  "dependencies": {
+    "jsdom": "^22.1.0"
+  }
 }
