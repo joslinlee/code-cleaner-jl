@@ -1,24 +1,24 @@
 {
-  "name": "code-cleaner",
-  "version": "0.4.2",
-  "description": "This code cleaner app is a code cleaning automation tool designed to format and log errors for the markup used to build courses with the PimaOnline Themepack.",
-  "main": "index.js",
-  "scripts": {
-    "dev": "gulp",
-    "start": "gulp clean-copy && gulp log",
-    "log": "gulp log",
-    "clean": "gulp clean-copy"
-  },
-  "author": "Francisco Reynoso",
-  "license": "MIT",
-  "type": "module",
-  "devDependencies": {
-    "gulp": "^4.0.2",
-    "gulp-cli": "^2.3.0",
-    "gulp-dom": "^1.0.0",
-    "gulp-jsbeautifier": "^3.0.1"
-  },
-  "dependencies": {
-    "jsdom": "^22.1.0"
-  }
+	"name": "code-cleaner",
+	"version": "0.4.3",
+	"description": "This code cleaner app is a code cleaning automation tool designed to format and log errors for the markup used to build courses with the PimaOnline Themepack.",
+	"main": "index.js",
+	"scripts": {
+		"dev": "gulp",
+		"start": "gulp clean-copy && gulp log",
+		"log": "gulp log",
+		"clean": "gulp clean-copy"
+	},
+	"author": "Francisco Reynoso",
+	"license": "MIT",
+	"type": "module",
+	"devDependencies": {
+		"gulp": "^4.0.2",
+		"gulp-cli": "^2.3.0",
+		"gulp-dom": "^1.0.0",
+		"gulp-jsbeautifier": "^3.0.1"
+	},
+	"dependencies": {
+		"jsdom": "^22.1.0"
+	}
 }
