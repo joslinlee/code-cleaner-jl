@@ -6,6 +6,7 @@ import { cleanElementAttributes } from "./clean/cleanElementAttributes.js";
 import { cleanTableAttributes } from "./clean/cleanTableAttributes.js";
 import { removeTargetAttributes } from "./clean/removeTargetAttributes.js";
 import { removeRolePresentation } from "./clean/removeRolePresentation.js";
+import { matchTitleToH1 } from "./clean/matchTitleToH1.js";
 
 export function clean() {
   gulp.task("clean", async () => {
@@ -16,6 +17,7 @@ export function clean() {
       .pipe(cleanTableAttributes())
       .pipe(removeTargetAttributes())
       .pipe(removeRolePresentation())
+      .pipe(matchTitleToH1())
       .pipe(
         beautify({
           indent_size: 2,
