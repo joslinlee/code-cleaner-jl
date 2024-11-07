@@ -1,11 +1,12 @@
 import dom from "gulp-dom";
 
-// remove the 'role' attribute from any element that contains it
+// match the title tag to the h1 tag if they don't already match
 export function matchTitleToH1() {
   return dom(function () {
     const h1 = this.querySelector("h1");
-    if (h1) {
-      this.querySelector("title").textContent = h1.textContent;
+    const title = this.querySelector("title");
+    if (h1 && title && title.textContent !== h1.textContent) {
+      title.textContent = h1.textContent;
     }
   });
 }
