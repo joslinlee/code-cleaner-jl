@@ -15,6 +15,7 @@ import { checkTitleAndH1 } from "./log/checkTitleAndH1.js"
 import { checkIframeTitles } from './log/checkIframeTitles.js';
 import { checkPanoptoWrapper } from './log/checkPanoptoContainer.js';
 import { checkHeadings } from './log/checkHeadings.js';
+import { checkScriptTagsLocation } from './log/checkJsScripts.js';
 import { checkJquery } from './log/checkJquery.js';
 
 export function log() {
@@ -35,6 +36,7 @@ export function log() {
           checkContentWrapper(document, file.path, errors);
           checkIframes(document, file.path, errors);
 					checkPanoptoWrapper(document, file.path, errors);
+					checkScriptTagsLocation(document, file.path, errors);
           checkIframeTitles(document, file.path, errors);
           checkContentBody(document, file.path, errors);
           checkDeprecatedClasses(document, file.path, errors);
