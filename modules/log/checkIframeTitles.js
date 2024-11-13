@@ -1,7 +1,9 @@
-export function checkIframeTitles(document, filePath, errors, stringsToCheck) {
+export function checkIframeTitles(document, filePath, errors, stringsToCheck, urlsToExclude) {
   // Get all iframes from the document
   let iframes = Array.from(document.querySelectorAll('iframe'));
   stringsToCheck = ["YouTube video player"];
+  // Skips YouTube placeholder iframes
+  urlsToExclude = ["https://www.youtube.com/embed/NpEaa2P7qZI?si=DFcFec4auMcyTLXX"];
 
   // Check each iframe
   iframes.forEach(iframe => {
@@ -44,7 +46,8 @@ export function checkIframeTitles(document, filePath, errors, stringsToCheck) {
     // If 'media-container' does not have a 'media-info' sibling, check the iframe's title attribute
     if (!hasMediaInfoSibling && title) {
       stringsToCheck.forEach(str => {
-        if (title.includes(str)) {
+        // Exclude Youtube placeholder iframes from log since those have the default title attr
+        if (!urlsToExclude.some(url => src && src.includes(url)) && title.includes(str)) {
           if (!errors[filePath]) {
             errors[filePath] = [];
           }
