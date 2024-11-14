@@ -13,13 +13,15 @@ export function checkContentBody(document, filePath, errors) {
   // Check each content body
   contentBodies.forEach(contentBody => {
     nestedElements.forEach(nestedElement => {
-      // Check if the content body contains any invalid nested elements
-			if (contentBody.querySelectorAll(nestedElement).length > 0) {
+      // Find all instances of the invalid nested element within the current content body
+      const invalidNestedElements = contentBody.querySelectorAll(nestedElement);
+
+      invalidNestedElements.forEach(() => {
         if (!errors[filePath]) {
           errors[filePath] = [];
         }
         errors[filePath].push(`An invalid '${nestedElement}' is nested within a '.content-body'`);
-      }
+      });
     });
 
     // Check if the content body is inside #content-wrapper, #second-column, or #third-column
