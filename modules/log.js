@@ -16,6 +16,7 @@ import { checkIframeTitles } from './log/checkIframeTitles.js';
 import { checkPanoptoWrapper } from './log/checkPanoptoContainer.js';
 import { checkHeadings } from './log/checkHeadings.js';
 import { checkScriptTagsLocation } from './log/checkJsScripts.js';
+import { checkJquery } from './log/checkJquery.js';
 
 export function log() {
   let errors = {};
@@ -42,6 +43,7 @@ export function log() {
           checkTables(document, file.path, errors);
           checkTitleAndH1(document, file.path, errors);
           checkImgAlt(document, file.path, errors);
+					checkJquery(document, file.path, errors);
 
           file.contents = Buffer.from(dom.serialize());
         }
