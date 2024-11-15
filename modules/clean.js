@@ -8,6 +8,7 @@ import { removeTargetAttributes } from "./clean/removeTargetAttributes.js";
 import { removeRolePresentation } from "./clean/removeRolePresentation.js";
 import { matchTitleToH1 } from "./clean/matchTitleToH1.js";
 import { cleanImageAttributes } from "./clean/cleanImageAttributes.js";
+import { removeContentBodyInnerTags } from "./clean/removeContentBodyInnerTags.js";
 import { removeJQueryScript } from "./clean/removeJQueryScript.js";
 
 export function clean() {
@@ -17,6 +18,7 @@ export function clean() {
       .pipe(cleanTextElements())
       .pipe(cleanElementAttributes())
       .pipe(cleanTableAttributes())
+			.pipe(removeContentBodyInnerTags())
 			.pipe(removeJQueryScript())
       .pipe(removeTargetAttributes())
       .pipe(removeRolePresentation())
