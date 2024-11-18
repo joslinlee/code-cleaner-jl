@@ -54,11 +54,12 @@ export function log() {
       }))
       .on('finish', () => {
         let hasErrors = false;
+        let t = 1;
       
         for (let e in errors) {
           if (errors[e].length > 0) {
             let r = path.relative('_input', e);
-            console.log(`Errors in file "${r}":`);
+            console.log(`${t}. Errors in file "${r}":`);
             for (let n of errors[e]) {
               console.log(` > ${n}`);
             }
@@ -68,7 +69,9 @@ export function log() {
         }
       
         if (!hasErrors) {
-          console.log("No errors found.");
+          console.log(`--------------------------------------------------
+No errors found.
+--------------------------------------------------`);
         }
       })            
   );
