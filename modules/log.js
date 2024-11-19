@@ -17,6 +17,7 @@ import { checkPanoptoWrapper } from './log/checkPanoptoContainer.js';
 import { checkHeadings } from './log/checkHeadings.js';
 import { checkScriptTagsLocation } from './log/checkJsScripts.js';
 import { checkJquery } from './log/checkJquery.js';
+import { checkIframeOnlyPages } from './log/checkIframeOnlyPages.js';
 
 export function log() {
   let errors = {};
@@ -29,21 +30,30 @@ export function log() {
           let dom = new jsdom(content, { includeNodeLocations: true });
           let document = dom.window.document;
 
-          checkDoctype(document, file.path, errors);
-          checkHtmlLang(document, file.path, errors);
-					checkHeadings(document, file.path, errors);
-          checkHeader(document, file.path, errors);
-          checkContentWrapper(document, file.path, errors);
-          checkIframes(document, file.path, errors);
-					checkPanoptoWrapper(document, file.path, errors);
-					checkScriptTagsLocation(document, file.path, errors);
-          checkIframeTitles(document, file.path, errors);
-          checkContentBody(document, file.path, errors);
-          checkDeprecatedClasses(document, file.path, errors);
-          checkTables(document, file.path, errors);
-          checkTitleAndH1(document, file.path, errors);
-          checkImgAlt(document, file.path, errors);
-					checkJquery(document, file.path, errors);
+          // Check if the page contains only <iframe> elements
+          const isIframeOnlyPage = checkIframeOnlyPages(document);
+
+          if (isIframeOnlyPage) {
+            // Only run iframe title check
+            checkIframeTitles(document, file.path, errors);
+          } else {
+            // Run all checks
+            checkDoctype(document, file.path, errors);
+            checkHtmlLang(document, file.path, errors);
+            checkHeadings(document, file.path, errors);
+            checkHeader(document, file.path, errors);
+            checkContentWrapper(document, file.path, errors);
+            checkIframes(document, file.path, errors);
+            checkPanoptoWrapper(document, file.path, errors);
+            checkScriptTagsLocation(document, file.path, errors);
+            checkIframeTitles(document, file.path, errors);
+            checkContentBody(document, file.path, errors);
+            checkDeprecatedClasses(document, file.path, errors);
+            checkTables(document, file.path, errors);
+            checkTitleAndH1(document, file.path, errors);
+            checkImgAlt(document, file.path, errors);
+            checkJquery(document, file.path, errors);
+          }
 
           file.contents = Buffer.from(dom.serialize());
         }
