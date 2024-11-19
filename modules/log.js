@@ -53,16 +53,26 @@ export function log() {
         callback(null, file);
       }))
       .on('finish', () => {
+        let hasErrors = false;
         let t = 1;
+      
         for (let e in errors) {
-          let r = path.relative('_input', e);
-          console.log(`${t}. Errors in file "${r}":`);
-          for (let n of errors[e]) {
-            console.log(` > ${n}`);
+          if (errors[e].length > 0) {
+            let r = path.relative('_input', e);
+            console.log(`${t}. Errors in file "${r}":`);
+            for (let n of errors[e]) {
+              console.log(` > ${n}`);
+            }
+            console.log('--------------------------------------------------');
+            hasErrors = true;
           }
-          console.log('--------------------------------------------------');
-          t++;
         }
-      })      
+      
+        if (!hasErrors) {
+          console.log(`--------------------------------------------------
+No errors found.
+--------------------------------------------------`);
+        }
+      })            
   );
 }
