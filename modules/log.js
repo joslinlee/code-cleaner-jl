@@ -74,6 +74,7 @@ export function log() {
               console.log(` > ${n}`);
             }
             console.log('--------------------------------------------------');
+            t++;
             hasErrors = true;
           }
         }
