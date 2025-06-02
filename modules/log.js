@@ -94,10 +94,10 @@ No errors found.
         }
 
 				 // Write to a .txt file (or .json if you'd rather serialize it)
-				 const reportsPath = './_reports/log-output.txt';
+				 const reportsPath = "./_reports/log-output.txt";
 
-				 if (!fs.existsSync('_reports')) {
-					fs.mkdirSync('_reports');
+				 if (!fs.existsSync("_reports")) {
+					fs.mkdirSync("_reports");
 				}
 
 				 fs.writeFileSync(reportsPath, reportsLog.join('\n\n'), 'utf8');
