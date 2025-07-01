@@ -4,7 +4,7 @@ import { checkValidParent } from "./modules/checkContentBody/checkValidParent.js
 export function checkContentBody(document, filePath, errors) {
   const nestedElements = [".content-body", "header"];
   const contentBodies = Array.from(document.querySelectorAll(".content-body"));
-  const validParents = ["content-wrapper", "second-column", "third-column"];
+  const validParents = ["content-wrapper", "first-column", "second-column", "third-column"];
 
   if (!errors[filePath]) {
     errors[filePath] = [];
