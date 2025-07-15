@@ -10,12 +10,10 @@ import { checkDeprecated } from "./log/checkDeprecated.js"
 import { checkHeader } from "./log/checkHeader.js"
 import { checkIframes } from "./log/checkIframes.js"
 import { checkImgAlt } from "./log/checkImgAlt.js"
-import { checkTables } from "./log/checkTables.js"
-import { checkTitleAndH1 } from "./log/checkTitleAndH1.js"
 import { checkIframeTitles } from './log/checkIframeTitles.js';
 import { checkPanoptoWrapper } from './log/checkPanoptoContainer.js';
-import { checkHeadings } from './log/checkHeadings.js';
 import { checkIframeOnlyPages } from './log/checkIframeOnlyPages.js';
+import { checkText } from './log/checkText.js';
 
 const logTitleMessage = "Log Report for Course Review"
 
@@ -39,7 +37,6 @@ export function log() {
           } else {
             // Run all checks
 						checkHead(document, file.path, errors);
-            checkHeadings(document, file.path, errors);
             checkHeader(document, file.path, errors);
             checkContentWrapper(document, file.path, errors);
             checkIframes(document, file.path, errors);
@@ -47,9 +44,8 @@ export function log() {
             checkIframeTitles(document, file.path, errors);
             checkContentBody(document, file.path, errors);
             checkDeprecated(document, file.path, errors);
-            checkTables(document, file.path, errors);
-            checkTitleAndH1(document, file.path, errors);
             checkImgAlt(document, file.path, errors);
+						checkText(document, file.path, errors);
           }
 
           file.contents = Buffer.from(dom.serialize());
