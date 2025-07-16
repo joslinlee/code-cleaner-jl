@@ -4,7 +4,6 @@ import through2 from 'through2';
 import fs from 'fs';
 import path from 'path';
 import { checkContentBody } from "./log/checkContentBody.js"
-import { checkContentWrapper } from "./log/checkContentWrapper.js"
 import { checkHead } from "./log/checkHead.js"
 import { checkDeprecated } from "./log/checkDeprecated.js"
 import { checkHeader } from "./log/checkHeader.js"
@@ -14,6 +13,7 @@ import { checkIframeTitles } from './log/checkIframeTitles.js';
 import { checkPanoptoWrapper } from './log/checkPanoptoContainer.js';
 import { checkIframeOnlyPages } from './log/checkIframeOnlyPages.js';
 import { checkText } from './log/checkText.js';
+import { checkFirstColumn } from './log/checkFirstColumn.js';
 
 const logTitleMessage = "Log Report for Course Review"
 
@@ -38,7 +38,7 @@ export function log() {
             // Run all checks
 						checkHead(document, file.path, errors);
             checkHeader(document, file.path, errors);
-            checkContentWrapper(document, file.path, errors);
+            checkFirstColumn(document, file.path, errors);
             checkIframes(document, file.path, errors);
             checkPanoptoWrapper(document, file.path, errors);
             checkIframeTitles(document, file.path, errors);
