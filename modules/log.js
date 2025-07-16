@@ -7,15 +7,12 @@ import { checkContentBody } from "./log/checkContentBody.js"
 import { checkHead } from "./log/checkHead.js"
 import { checkDeprecated } from "./log/checkDeprecated.js"
 import { checkHeader } from "./log/checkHeader.js"
-import { checkIframes } from "./log/checkIframes.js"
-import { checkImgAlt } from "./log/checkImgAlt.js"
 import { checkTables } from "./log/checkTables.js"
 import { checkTitleAndH1 } from "./log/checkTitleAndH1.js"
-import { checkIframeTitles } from './log/checkIframeTitles.js';
-import { checkPanoptoWrapper } from './log/checkPanoptoContainer.js';
 import { checkHeadings } from './log/checkHeadings.js';
-import { checkIframeOnlyPages } from './log/checkIframeOnlyPages.js';
 import { checkFirstColumn } from './log/checkFirstColumn.js';
+import { checkMedia } from './log/checkMedia.js';
+import { checkIframeOnlyPages } from './log/checkIframeOnlyPages.js';
 
 const logTitleMessage = "Log Report for Course Review"
 
@@ -42,14 +39,11 @@ export function log() {
             checkHeadings(document, file.path, errors);
             checkHeader(document, file.path, errors);
             checkFirstColumn(document, file.path, errors);
-            checkIframes(document, file.path, errors);
-            checkPanoptoWrapper(document, file.path, errors);
-            checkIframeTitles(document, file.path, errors);
             checkContentBody(document, file.path, errors);
             checkDeprecated(document, file.path, errors);
             checkTables(document, file.path, errors);
             checkTitleAndH1(document, file.path, errors);
-            checkImgAlt(document, file.path, errors);
+						checkMedia(document, file.path, errors);
           }
 
           file.contents = Buffer.from(dom.serialize());
