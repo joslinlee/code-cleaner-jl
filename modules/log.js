@@ -7,12 +7,10 @@ import { checkContentBody } from "./log/checkContentBody.js"
 import { checkHead } from "./log/checkHead.js"
 import { checkDeprecated } from "./log/checkDeprecated.js"
 import { checkHeader } from "./log/checkHeader.js"
-import { checkTables } from "./log/checkTables.js"
-import { checkTitleAndH1 } from "./log/checkTitleAndH1.js"
-import { checkHeadings } from './log/checkHeadings.js';
 import { checkFirstColumn } from './log/checkFirstColumn.js';
 import { checkMedia } from './log/checkMedia.js';
 import { checkIframeOnlyPages } from './log/checkIframeOnlyPages.js';
+import { checkText } from './log/checkText.js';
 
 const logTitleMessage = "Log Report for Course Review"
 
@@ -36,14 +34,12 @@ export function log() {
           } else {
             // Run all checks
 						checkHead(document, file.path, errors);
-            checkHeadings(document, file.path, errors);
             checkHeader(document, file.path, errors);
             checkFirstColumn(document, file.path, errors);
             checkContentBody(document, file.path, errors);
             checkDeprecated(document, file.path, errors);
-            checkTables(document, file.path, errors);
-            checkTitleAndH1(document, file.path, errors);
 						checkMedia(document, file.path, errors);
+						checkText(document, file.path, errors);
           }
 
           file.contents = Buffer.from(dom.serialize());
