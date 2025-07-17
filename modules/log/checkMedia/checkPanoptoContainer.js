@@ -1,6 +1,6 @@
 // This requires a check for media container and media object even though it is found in checkIframeTitles.js because Panopto videos are lumped together with h5p videos in the same check. This is a separate check for Panopto videos only.
 
-export function checkPanoptoWrapper(document, filePath, errors) {
+export function checkPanoptoContainer(document, filePath, errors) {
 	// Get all panopto videos from the document - this uses the "rcode=PIMA" parameter in the URL
 	const panoptoVideos = Array.from(document.querySelectorAll('iframe[src*="rcode=PIMA"]'));
 

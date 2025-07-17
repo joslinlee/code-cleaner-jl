@@ -1,4 +1,4 @@
-export function checkImgAlt(document, filePath, errors) {
+export function checkImgAttributes(document, filePath, errors) {
 
   // Helper function to log errors
   const logError = (message) => {
@@ -24,7 +24,7 @@ export function checkImgAlt(document, filePath, errors) {
         // If not in a <header>, check if the <img> is inside a <figure> with a <figcaption>
         const parent = img.parentElement;
         if (!parent || parent.tagName !== 'FIGURE' || !parent.querySelector('figcaption')) {
-          logError('An <img> element is missing its alt attribute and is not inside a <figure> with a <figcaption>');
+          logError('An <img> element is missing its alt attribute (and is not part of a <figure> with a <figcaption>)');
         } else {
           // <img> is inside a <figure> with a <figcaption> but missing alt attribute
           logError('An <img> within a <figure> element is missing its alt attribute');
@@ -32,16 +32,11 @@ export function checkImgAlt(document, filePath, errors) {
       }
     }
 
-    // Check if <img> is inside a <p> tag
-    if (img.parentElement && img.parentElement.tagName === 'P') {
-      logError('An <img> element is inside a <p> tag');
-    }
-
     // Check for unnecessary attributes
     const attributes = ['decoding', 'fetchpriority', 'height', 'loading', 'srcset', 'style', 'sizes', 'width'];
     attributes.forEach((attribute) => {
       if (img.hasAttribute(attribute)) {
-        logError(`An <img> element contains the attribute: ${attribute}`);
+        logError(`An <img> element contains the unnecessary attribute: ${attribute}`);
       }
     });
   });
