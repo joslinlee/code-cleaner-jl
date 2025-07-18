@@ -1,13 +1,12 @@
-import dom from "gulp-dom";
+import { domTransform } from "..//hooks/domTransform.js";
 import { config } from "../../config.js";
 
 // Array of tags to remove, leaving content intact
 const innerContentBodyTagsToRemove = config.innerContentBodyTagsToRemove;
 
 export function removeContentBodyInnerTags() {
-  return dom(function () {
-    // Select all elements with the .content-body class
-    const contentBodyElements = this.querySelectorAll('.content-body');
+	return domTransform((document) => {
+		const contentBodyElements = document.querySelectorAll('.content-body');
     
     // Loop through each .content-body element
     contentBodyElements.forEach(contentBody => {
@@ -21,5 +20,5 @@ export function removeContentBodyInnerTags() {
         });
       });
     });
-  });
+	});
 }

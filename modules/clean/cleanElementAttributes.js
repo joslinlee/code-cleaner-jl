@@ -1,11 +1,11 @@
-import dom from "gulp-dom";
+import { domTransform } from "..//hooks/domTransform.js";
 
 // remove 'style' attribute from given elements
 export function cleanElementAttributes() {
-  return dom(function () {
+  return domTransform((document) => {
     const discardElemAttributes = (element, ...attributes) =>
       attributes.forEach((attribute) => element.removeAttribute(attribute));
-    return this.querySelectorAll("body, div, span, bold, em").forEach((elem) =>
+    return document.querySelectorAll("body, div, span, bold, em").forEach((elem) =>
       discardElemAttributes(elem, "style")
     );
   });

@@ -1,10 +1,8 @@
-import dom from "gulp-dom";
+import { domTransform } from "..//hooks/domTransform.js";
 
-// remove the 'role' attribute from any element that contains it
 export function removeJQueryScript() {
-  return dom(function () {
-    return this.querySelectorAll('script[src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"]').forEach((jQueryScript) =>
-      jQueryScript.remove()
-    );
-  });
+	return domTransform((document) => {
+		const elements = document.querySelectorAll('script[src="https://cdn.jsdelivr.net/npm/jquery/dist/jquery.min.js"]');
+		elements.forEach((el) => el.remove());
+	});
 }
