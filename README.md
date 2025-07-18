@@ -6,9 +6,11 @@ This code cleaner app is a code cleaning automation tool designed to format and 
 
 - node.js
 - gulp
-- gulp-dom
+- gulp-filter
 - gulp-jsbeautifier
+- gulp-size
 - jsdom
+- through2
 
 ## How to use
 
