@@ -1,12 +1,8 @@
-import dom from "gulp-dom";
+import { domTransform } from "..//hooks/domTransform.js";
 
-// remove the 'role' attribute from any element that contains it
 export function removeRolePresentation() {
-  return dom(function () {
-    const discardRolePres = (element, ...attributes) =>
-      attributes.forEach((attribute) => element.removeAttribute(attribute));
-    return this.querySelectorAll('[role="presentation"]').forEach((tableElem) =>
-      discardRolePres(tableElem, "role")
-    );
+  return domTransform((document) => {
+    const elements = document.querySelectorAll('[role="presentation"]');
+    elements.forEach((el) => el.removeAttribute("role"));
   });
 }

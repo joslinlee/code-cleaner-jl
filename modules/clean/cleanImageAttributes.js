@@ -1,7 +1,7 @@
-import dom from "gulp-dom";
+import { domTransform } from "..//hooks/domTransform.js";
 
 export function cleanImageAttributes() {
-  return dom(function () {
+	return domTransform((document) => {
     // Define the attributes to remove from each image tag
     const attributesToRemove = [
       "decoding",
@@ -15,7 +15,7 @@ export function cleanImageAttributes() {
     ];
 
     // Select all <img> elements in the document
-    const images = this.querySelectorAll("img");
+    const images = document.querySelectorAll("img");
 
     images.forEach((img) => {
       // Remove specified attributes from the <img> tag
@@ -31,7 +31,7 @@ export function cleanImageAttributes() {
       // Check if the parent is a <p> and replace it with a <div>
       const parent = img.parentNode;
       if (parent && parent.tagName.toLowerCase() === "p") {
-        const div = this.createElement("div");
+        const div = document.createElement("div");
         parent.replaceWith(div);
         div.appendChild(img);
       }
