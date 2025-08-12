@@ -171,7 +171,7 @@ export const config = {
 	h5pUrlStarting: "https://pima.h5p.com",
 
 	// Panopto iframe selector
-	panoptoIframeSelector: "iframe[src*='rcode=PIMA']",
+	panoptoIframeSelector: ["https://pima-cc.hosted.panopto.com"],
 
 	// Depricated classes
 	deprecatedClasses: ["main", "main-two-column", "sidebar", "video-container"],
