@@ -208,7 +208,7 @@ export default function App() {
           {/* Only render CodeEditor if selectedFile exists AND is a readable type */}
           {selectedFile && /\.(html?|css|js|txt)$/i.test(selectedFile.path) ? (
             <>
-              <CodeEditor code={currentCode} onChange={setCurrentCode} />
+              <CodeEditor code={currentCode} onChange={setCurrentCode} filePath={selectedFile?.path} />
               <div className="editor-actions">
                 <button onClick={saveEdits}>Save</button>
                 <button disabled>Save & Next</button>
