@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
-import { EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
-import { html } from "@codemirror/lang-html"; // For HTML files
+import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { javascript } from "@codemirror/lang-javascript";
 
@@ -20,7 +20,17 @@ export default function CodeEditor({ code, onChange, filePath }) {
   // A React ref to hold the CodeMirror EditorView instance. This allows us to interact
   // with the editor instance across different renders and effects.
   const editorViewRef = useRef(null);
+  // A ref to hold a CodeMirror Compartment for dynamically changing the language.
+  // This is stored in a ref to ensure it's a single, stable instance.
+  const languageCompartmentRef = useRef(new Compartment());
 
+  // This ref will hold the latest `onChange` function. This is a common pattern
+  // to avoid re-creating the entire editor when the callback prop changes,
+  // which would otherwise be a dependency of the main `useEffect`.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
   // Helper function to determine which CodeMirror language extension to use
   // based on the file's extension from its path.
   const getLanguageExtension = (path) => {
@@ -33,8 +43,7 @@ export default function CodeEditor({ code, onChange, filePath }) {
     return [];
   };
 
-  // 1. useEffect for initial CodeMirror setup.
-  // This effect runs ONLY ONCE when the component first mounts, because of the empty dependency array [].
+  // This effect handles the initial CodeMirror setup and runs only once on mount.
   useEffect(() => {
     // Don't do anything if the target DOM element isn't ready yet.
     if (!editorContainerRef.current) return;
@@ -47,17 +56,18 @@ export default function CodeEditor({ code, onChange, filePath }) {
 
     // Create the initial state for the editor.
     const initialEditorState = EditorState.create({
-      doc: code, // Set the initial document content from the 'code' prop.
+      doc: code,
       extensions: [
-        lineNumbers(), // Show line numbers.
-        keymap.of(defaultKeymap), // Include standard keybindings (undo, redo, etc.).
-        getLanguageExtension(filePath), // Set the initial language based on the filePath prop.
+        lineNumbers(),
+        keymap.of(defaultKeymap),
+        // The language compartment is initialized with the first file's language.
+        languageCompartmentRef.current.of(getLanguageExtension(filePath)),
         // This listener detects changes to the editor's document.
         EditorView.updateListener.of((viewUpdate) => {
           // `docChanged` is true if the user typed, pasted, or undid an action.
           if (viewUpdate.docChanged) {
-            // Call the `onChange` callback prop with the new content.
-            onChange(viewUpdate.state.doc.toString());
+            // Use the ref to call the latest onChange function, avoiding stale closures.
+            onChangeRef.current(viewUpdate.state.doc.toString());
           }
         }),
         // A basic theme to style the editor.
@@ -78,7 +88,7 @@ export default function CodeEditor({ code, onChange, filePath }) {
     // Create the EditorView, which is the UI part of the editor.
     editorViewRef.current = new EditorView({
       state: initialEditorState,
-      parent: editorContainerRef.current, // Attach it to our ref'd div.
+      parent: editorContainerRef.current,
     });
 
     // The returned function is a cleanup function that React runs when the component unmounts.
@@ -86,10 +96,12 @@ export default function CodeEditor({ code, onChange, filePath }) {
       editorViewRef.current?.destroy(); // Safely destroy the editor instance to prevent memory leaks.
       editorViewRef.current = null;
     };
-  }, []); // The empty array [] means this effect runs only once on mount.
+    // This effect runs only once on mount. The `code` and `filePath` props are used
+    // only for the initial setup. Subsequent changes are handled by other effects
+    // to avoid re-creating the entire editor.
+  }, []);
 
-  // 2. useEffect to update the editor's content when the 'code' prop changes.
-  // This is crucial for loading a new file's content into the editor after it has been initialized.
+  // This effect updates the editor's content when the 'code' prop changes.
   useEffect(() => {
     // Ensure the editor view is ready and that the incoming 'code' is different from what's currently in the editor.
     // This prevents an infinite loop of updates.
@@ -98,43 +110,27 @@ export default function CodeEditor({ code, onChange, filePath }) {
       editorViewRef.current.dispatch({
         changes: {
           from: 0,
-          to: editorViewRef.current.state.doc.length, // Select the entire document.
-          insert: code, // Replace it with the new code.
+          to: editorViewRef.current.state.doc.length,
+          insert: code,
         },
-        // Optionally preserve the user's cursor position/selection, though it's often
-        // better to reset it when loading a completely new document.
-        // selection: viewRef.current.state.selection,
       });
     }
   }, [code]); // This effect re-runs whenever the 'code' prop changes.
 
-  // 3. useEffect to update editor's language mode when 'filePath' prop changes
+  // This effect updates the editor's language mode when the 'filePath' prop changes.
   useEffect(() => {
+    // If the editor view and a file path exist, dispatch an effect to update
+    // the language compartment with the new language extension.
     if (editorViewRef.current && filePath) {
-      const newLanguageExtension = getLanguageExtension(filePath);
-      // Reconfigure the view with the new language extension.
-      // NOTE: `reconfigure` replaces all extensions. For this to work correctly,
-      // you must provide the full set of extensions again, not just the language one.
-      // A more robust solution uses CodeMirror's `Compartment` feature, but this works.
       editorViewRef.current.dispatch({
-        effects: EditorView.reconfigure.of([
-          // Re-adding all extensions to ensure they are not lost
-          lineNumbers(),
-          keymap.of(defaultKeymap),
-          newLanguageExtension, // The new language
-          EditorView.updateListener.of((viewUpdate) => {
-            if (viewUpdate.docChanged) {
-              onChange(viewUpdate.state.doc.toString());
-            }
-          }),
-          // The theme also needs to be re-applied.
-          EditorView.theme({ "&": { height: "100%", fontSize: "14px", fontFamily: "monospace", backgroundColor: "white" }, ".cm-content": { padding: "1rem" } }),
-        ])
+        effects: languageCompartmentRef.current.reconfigure(
+          getLanguageExtension(filePath)
+        ),
       });
     }
   }, [filePath]); // This effect runs whenever the 'filePath' prop changes.
 
 
-  // This is the target DOM element for CodeMirror. The `ref` connects it to our `editorRef`.
+  // This is the target DOM element for CodeMirror. The `ref` connects it to our `editorContainerRef`.
   return <div ref={editorContainerRef} className="codemirror-wrapper" style={{ height: '100%' }} />;
 }
