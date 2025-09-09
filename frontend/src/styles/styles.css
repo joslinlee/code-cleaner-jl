@@ -83,6 +83,9 @@ body {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 2rem;
 }
 
 .editor-panel h2 {
@@ -104,15 +107,6 @@ body {
 .fix-buttons button:hover,
 .editor-actions button:hover {
   background-color: #1e88e5;
-}
-
-.editor-panel {
-  flex-grow: 1;
-  padding: 2rem;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-	margin-bottom: 2rem;
 }
 
 .editor-actions {
@@ -183,12 +177,6 @@ body {
 .upload-modal button:hover {
   background-color: #1e88e5;
 }
-
-.upload-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
-.upload-modal { background:#fff; padding:2rem; border-radius:8px; width:600px; max-width:90%; text-align:center; border:3px dashed #ccc; transition: .2s ease; }
-.upload-modal.dragging { border-color:#2196f3; background:#f0f8ff; }
-.upload-modal button { margin-top:1rem; padding:.5rem 1rem; border:none; background:#2196f3; color:#fff; border-radius:4px; cursor:pointer; }
-
 
 .file-tree { font-size: 14px; }
 .tree-node .folder, .tree-node .file {
