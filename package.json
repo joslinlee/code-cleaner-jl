@@ -7,7 +7,9 @@
     "dev": "gulp",
     "start": "gulp clean-copy && gulp log && gulp check-image-sizes",
     "log": "gulp log && gulp check-image-sizes",
-    "clean": "gulp clean-copy"
+    "clean": "gulp clean-copy",
+		"server": "node server/index.js",
+  	"server:dev": "nodemon server/index.js"
   },
   "author": "Francisco Reynoso",
   "license": "MIT",
@@ -19,6 +21,15 @@
     "gulp-jsbeautifier": "^3.0.1",
     "gulp-size": "^5.0.0",
     "jsdom": "^26.1.0",
+    "nodemon": "^3.1.10",
     "through2": "^4.0.2"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "cors": "^2.8.5",
+    "execa": "^9.6.0",
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.1",
+    "multer": "^2.0.2"
   }
 }
