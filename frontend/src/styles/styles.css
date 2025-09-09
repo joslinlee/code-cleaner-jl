@@ -1,0 +1,207 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+	width: 100vw;
+}
+
+/* Top Bar */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #2d2d2d;
+  color: white;
+}
+
+.top-bar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.top-bar .actions button {
+  margin-left: 1rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: #4caf50;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.top-bar .actions button:hover {
+  background-color: #45a049;
+}
+
+/* Main Area */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 350px;
+  background-color: #eeeeee;
+  padding: 1rem;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;
+}
+
+.sidebar h2 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.file-item {
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+}
+
+.file-item:hover {
+  background-color: #ddd;
+}
+
+.file-item.selected {
+  background-color: #ccc;
+  font-weight: bold;
+}
+
+/* Editor Panel */
+.editor-panel {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.editor-panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.fix-buttons button,
+.editor-actions button {
+  margin: 0.5rem 0.5rem 0.5rem 0;
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: #2196f3;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.fix-buttons button:hover,
+.editor-actions button:hover {
+  background-color: #1e88e5;
+}
+
+.editor-panel {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+	margin-bottom: 2rem;
+}
+
+.editor-actions {
+  margin-top: 2rem;
+}
+
+.codemirror-wrapper {
+  margin-top: 1rem;
+  height: 100%;              /* take up full vertical space */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  overflow: auto;
+}
+
+
+.drop-zone {
+  margin-top: 1rem;
+  border: 2px dashed #aaa;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: #555;
+  background-color: #fafafa;
+  cursor: pointer;
+}
+
+.upload-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.upload-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  text-align: center;
+  border: 3px dashed #ccc;
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.upload-modal.dragging {
+  border-color: #2196f3;
+  background-color: #f0f8ff;
+}
+
+.upload-modal h2 {
+  margin-top: 0;
+}
+
+.upload-modal button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  background-color: #2196f3;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.upload-modal button:hover {
+  background-color: #1e88e5;
+}
+
+.upload-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:2000; }
+.upload-modal { background:#fff; padding:2rem; border-radius:8px; width:600px; max-width:90%; text-align:center; border:3px dashed #ccc; transition: .2s ease; }
+.upload-modal.dragging { border-color:#2196f3; background:#f0f8ff; }
+.upload-modal button { margin-top:1rem; padding:.5rem 1rem; border:none; background:#2196f3; color:#fff; border-radius:4px; cursor:pointer; }
+
+
+.file-tree { font-size: 14px; }
+.tree-node .folder, .tree-node .file {
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex; /* Added flex for icon and text alignment */
+  align-items: center;
+  gap: 5px; /* Space between icon and text */
+}
+.tree-node .folder:hover, .tree-node .file:hover { background:#ddd; }
+.tree-node .children {
+  margin-left: 14px; /* This creates the indentation */
+  border-left: 1px dashed #ccc; /* This creates the vertical line */
+  padding-left: 8px;
+}
