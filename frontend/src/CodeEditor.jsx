@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Compartment, EditorState } from "@codemirror/state";
+import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
 import { EditorView, keymap, lineNumbers } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { html } from "@codemirror/lang-html";
@@ -62,6 +63,7 @@ export default function CodeEditor({ code, onChange, filePath }) {
         keymap.of(defaultKeymap),
         // The language compartment is initialized with the first file's language.
         languageCompartmentRef.current.of(getLanguageExtension(filePath)),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
         // This listener detects changes to the editor's document.
         EditorView.updateListener.of((viewUpdate) => {
           // `docChanged` is true if the user typed, pasted, or undid an action.
