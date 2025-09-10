@@ -6,45 +6,48 @@ export function checkIframes(document, filePath, errors) {
 
   // Check each iframe
   iframes.forEach(iframe => {
-    let src = iframe.getAttribute(config.sourceSelector);
+    const src = iframe.getAttribute(config.sourceSelector) || '';
+    const ariaLabel = iframe.getAttribute("aria-label")?.toLowerCase() || '';
 
-    // Check if the iframe uses h5p and if it does, ensure it is wrapped in a div
-    if (src && config.h5pUrlSelector.some(url => src.includes(url))) {
-      let parent = iframe.parentElement;
+    const isH5P = config.h5pUrlSelector.some(url => src.includes(url));
+    const isPanopto = config.panoptoIframeSelector.some(url => src.includes(url)) || ariaLabel.includes("panopto");
 
-      // Check if the iframe is contained within a div with the class 'media-object'
-      while (parent !== null) {
-        if (parent.tagName.toLowerCase() === config.divSelector) {
-          return;
+    // Check 1: H5P iframes must have a personal <div> wrapper.
+    // This check excludes Panopto videos, which are handled by `checkPanoptoContainer.js`.
+    if (isH5P && !isPanopto) {
+      const parent = iframe.parentElement;
+      const isPersonallyWrapped = parent &&
+        parent.tagName.toLowerCase() === config.divSelector &&
+        parent.children.length === 1;
+
+      if (!isPersonallyWrapped) {
+        if (!errors[filePath]) {
+          errors[filePath] = [];
         }
-        parent = parent.parentElement;
+        errors[filePath].push(errorMessages.h5pIframeErrorMessage);
       }
-
-      // If the iframe is not contained within a div with the class 'media-object', add an error
-      if (!errors[filePath]) {
-        errors[filePath] = [];
-      }
-      errors[filePath].push(errorMessages.h5pIframeErrorMessage);
     }
+    // Check 2: All other iframes (e.g., YouTube) must have the standard media wrapper.
+    // This is a catch-all that excludes H5P and Panopto iframes.
+    else if (!isH5P && !isPanopto) {
+      const parent = iframe.parentElement;
+      const grandParent = parent ? parent.parentElement : null;
 
-    // Check if the iframe's src attribute includes specific URLs
-    if (src && (config.iframeUrlCheck.some(url => src.includes(url)))) {
+      // A correctly wrapped iframe should be in a .media-object div, which is in a .media-container div.
+      const isCorrectlyWrapped = parent &&
+        parent.tagName.toLowerCase() === config.divSelector &&
+        parent.classList.contains(config.mediaObjectSelector) &&
+        grandParent &&
+        grandParent.tagName.toLowerCase() === config.divSelector &&
+        grandParent.classList.contains(config.mediaContainerSelector);
 
-      let parent = iframe.parentElement;
-
-      // Check if the iframe is contained within a div with the class 'media-object'
-      while (parent !== null) {
-        if (parent.tagName.toLowerCase() === config.divSelector && parent.getAttribute("class") === config.mediaObjectSelector) {
-          return;
+      if (!isCorrectlyWrapped) {
+        if (!errors[filePath]) {
+          errors[filePath] = [];
         }
-        parent = parent.parentElement;
+        // Use the more descriptive error message for wrapper issues.
+        errors[filePath].push(errorMessages.iframeWrapperErrorMessage);
       }
-
-      // If the iframe is not contained within a div with the class 'media-object', add an error
-      if (!errors[filePath]) {
-        errors[filePath] = [];
-      }
-      errors[filePath].push(errorMessages.iframeErrorMessage);
     }
   });
 }
