@@ -10,6 +10,7 @@ import { checkHeader } from "./log/checkHeader.js"
 import { checkFirstColumn } from './log/checkFirstColumn.js';
 import { checkMedia } from './log/checkMedia.js';
 import { checkIframeOnlyPages } from './log/checkIframeOnlyPages.js';
+import { checkIframeTitles } from './log/checkMedia/checkIframeTitles.js';
 import { checkText } from './log/checkText.js';
 
 const logTitleMessage = "Log Report for Course Review"
