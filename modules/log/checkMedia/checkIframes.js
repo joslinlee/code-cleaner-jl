@@ -12,6 +12,8 @@ export function checkIframes(document, filePath, errors) {
     const isH5P = config.h5pUrlSelector.some(url => src.includes(url));
     const isPanopto = config.panoptoIframeSelector.some(url => src.includes(url)) || ariaLabel.includes("panopto");
 
+		let errorMessage = null;
+
     // Check 1: H5P iframes must have a personal <div> wrapper.
     // This check excludes Panopto videos, which are handled by `checkPanoptoContainer.js`.
     if (isH5P && !isPanopto) {
@@ -20,12 +22,9 @@ export function checkIframes(document, filePath, errors) {
         parent.tagName.toLowerCase() === config.divSelector &&
         parent.children.length === 1;
 
-      if (!isPersonallyWrapped) {
-        if (!errors[filePath]) {
-          errors[filePath] = [];
-        }
-        errors[filePath].push(errorMessages.h5pIframeErrorMessage);
-      }
+				if (!isPersonallyWrapped) {
+					errorMessage = errorMessages.h5pIframeErrorMessage;
+				}
     }
     // Check 2: All other iframes (e.g., YouTube) must have the standard media wrapper.
     // This is a catch-all that excludes H5P and Panopto iframes.
@@ -41,13 +40,17 @@ export function checkIframes(document, filePath, errors) {
         grandParent.tagName.toLowerCase() === config.divSelector &&
         grandParent.classList.contains(config.mediaContainerSelector);
 
-      if (!isCorrectlyWrapped) {
-        if (!errors[filePath]) {
-          errors[filePath] = [];
-        }
-        // Use the more descriptive error message for wrapper issues.
-        errors[filePath].push(errorMessages.iframeWrapperErrorMessage);
+				if (!isCorrectlyWrapped) {
+					// Use the more descriptive error message for wrapper issues.
+					errorMessage = errorMessages.iframeWrapperErrorMessage;
+				}
+    }
+
+		if (errorMessage) {
+      if (!errors[filePath]) {
+        errors[filePath] = [];
       }
+      errors[filePath].push(errorMessage);
     }
   });
 }
