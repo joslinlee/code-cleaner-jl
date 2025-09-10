@@ -27,32 +27,17 @@ export function checkIframeTitles(document, filePath, errors) {
 				return; // skip this iframe entirely
 			}
 
-    let parent = iframe.parentElement;
-    let foundMediaObject = false;
-    let foundMediaContainer = false;
+    const parent = iframe.parentElement;
     let hasMediaInfoSibling = false;
 
-    // Check if the iframe is contained within a div with the class 'media-object'
-    if (parent && parent.tagName.toLowerCase() === config.divSelector && parent.getAttribute("class") === config.mediaObjectSelector) {
-      foundMediaObject = true;
-
-      // Check if the 'media-object' is wrapped by 'media-container'
-      let grandParent = parent.parentElement;
-      if (grandParent && grandParent.tagName.toLowerCase() === config.divSelector && grandParent.classList.contains(config.mediaContainerSelector)) {
-        foundMediaContainer = true;
-
+    // Check for a media-info sibling to determine if the title check is necessary.
+    if (parent && parent.classList.contains(config.mediaObjectSelector)) {
+      const grandParent = parent.parentElement;
+      if (grandParent && grandParent.classList.contains(config.mediaContainerSelector)) {
         // Check if 'media-container' has a sibling with the class 'media-info'
-        let siblings = Array.from(grandParent.children);
-        hasMediaInfoSibling = siblings.some(sibling => sibling.getAttribute("class") === config.mediaInfoSelector);
+        const siblings = Array.from(grandParent.children);
+        hasMediaInfoSibling = siblings.some(sibling => sibling.classList.contains(config.mediaInfoSelector));
       }
-    }
-
-    // Log errors based on the checks
-    if (!foundMediaObject || !foundMediaContainer) {
-      if (!errors[filePath]) {
-        errors[filePath] = [];
-      }
-      errors[filePath].push(errorMessages.iframeWrapperErrorMessage);
     }
 
     // If 'media-container' does not have a 'media-info' sibling, check the iframe's title attribute
