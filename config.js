@@ -161,6 +161,9 @@ export const config = {
 		"h5p"
 	], 
 
+	// The selector for iframe elements
+  iframeSelector: "iframe",
+
 	// iframe checks for youtube and panopto
 	iframeUrlCheck: [
 		"https://www.youtube.com",
