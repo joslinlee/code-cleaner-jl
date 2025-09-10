@@ -31,9 +31,9 @@ export function checkIframeTitles(document, filePath, errors) {
     let hasMediaInfoSibling = false;
 
     // Check for a media-info sibling to determine if the title check is necessary.
-    if (parent && parent.classList.contains(config.mediaObjectSelector)) {
+		if (parent && parent.tagName.toLowerCase() === config.divSelector && parent.classList.contains(config.mediaObjectSelector)) {
       const grandParent = parent.parentElement;
-      if (grandParent && grandParent.classList.contains(config.mediaContainerSelector)) {
+      if (grandParent && grandParent.tagName.toLowerCase() === config.divSelector && grandParent.classList.contains(config.mediaContainerSelector)) {
         // Check if 'media-container' has a sibling with the class 'media-info'
         const siblings = Array.from(grandParent.children);
         hasMediaInfoSibling = siblings.some(sibling => sibling.classList.contains(config.mediaInfoSelector));
