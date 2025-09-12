@@ -180,14 +180,14 @@ export default function App() {
   }
 
   // --- Toast Management ---
-  const addToast = (message, type = 'success') => {
-    const id = Date.now() + Math.random();
+  const addToast = useCallback ((message, type = 'success') => {
+    const id = crypto.randomUUID(); // Unique ID for each toast
     setToasts(prevToasts => [...prevToasts, { id, message, type }]);
-  };
+  }, []);
 
-  const removeToast = (id) => {
+  const removeToast = useCallback((id) => {
     setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
-  };
+  }, []);
 
   async function saveEdits() {
     if (!selectedPath || isSaving) return;
