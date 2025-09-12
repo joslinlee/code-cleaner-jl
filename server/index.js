@@ -96,6 +96,41 @@ app.post("/api/upload", upload.array("files"), async (req, res) => {
 });
 
 /**
+ * Saves the provided content to a specified file path.
+ * Expects a JSON body: { path: "path/to/file.html", content: "..." }
+ */
+app.post('/api/save', async (req, res) => {
+    const { path: relativePath, content } = req.body;
+
+    if (!relativePath || content === undefined) {
+        return res.status(400).json({ message: 'Missing path or content in request body.' });
+    }
+
+    // --- Security Check: Path Traversal ---
+    // This is a critical security measure to prevent writing files outside the INPUT_DIR directory.
+    const absoluteTargetPath = path.join(INPUT_DIR, relativePath);
+
+    // By resolving and comparing, we ensure the target is safely within the intended folder.
+    if (!path.resolve(absoluteTargetPath).startsWith(path.resolve(INPUT_DIR))) {
+        return res.status(403).json({ message: 'Forbidden: Attempted to write outside of the allowed directory.' });
+    }
+    // --- End Security Check ---
+
+    try {
+        // Ensure the directory for the file exists before writing.
+        await fs.ensureDir(path.dirname(absoluteTargetPath));
+
+        // Write the file content.
+        await fs.writeFile(absoluteTargetPath, content, 'utf8');
+        
+        res.status(200).json({ message: 'File saved successfully.' });
+    } catch (error) {
+        console.error(`Error saving file ${relativePath}:`, error);
+        res.status(500).json({ message: `Failed to save file: ${error.message}` });
+    }
+});
+
+/**
  * Triggers the Gulp "log" task, which is expected to perform the main processing
  * on the files in the `_input` directory. After the task completes, it reads the
  * generated report and sends it back to the client.
