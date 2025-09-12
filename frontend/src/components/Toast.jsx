@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
+const ToastShowDuration = 2000; // Duration to show the toast before starting to close
+const ToastCloseAnimationDuration = 400; // Duration of the close animation
+
 const Toast = ({ toast, onClose }) => {
   const { id, message, type } = toast;
   const [isClosing, setIsClosing] = useState(false);
@@ -8,7 +11,7 @@ const Toast = ({ toast, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsClosing(true);
-    }, 1000); // Auto-close after 1 seconds
+    }, ToastShowDuration); // Auto-close after 2 seconds
 
     return () => {
       clearTimeout(timer);
@@ -21,7 +24,7 @@ const Toast = ({ toast, onClose }) => {
       // This duration should match the CSS animation duration
       const animationTimer = setTimeout(() => {
         onClose(id);
-      }, 400); 
+      }, ToastCloseAnimationDuration); 
 
       return () => {
         clearTimeout(animationTimer);
