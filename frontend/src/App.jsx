@@ -1,5 +1,5 @@
 import "./styles/styles.css";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import CodeEditor from "./CodeEditor"; // Assuming you have this component
 import UploadModal from "./components/UploadModal";
 import FileTree from "./components/FileTree";
