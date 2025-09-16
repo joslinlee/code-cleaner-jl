@@ -1,14 +1,21 @@
 import { config, errorMessages } from "../../../../config.js";
 
 export function checkJquery(document, filePath, errors) {
+	const fileErrors = [];
 	// Check if the document contains the jquery script
 	let jqueryScript = document.querySelector(config.jQueryScriptSelector);
 	if (jqueryScript) {
-		// Initialize the errors array for the file path if it exist
+		// Add the error message to the errors array for the file path
+		fileErrors.push({
+      message: errorMessages.missingJQueryScriptErrorMessage,
+      node: jqueryScript, // The script tag itself is the perfect node.
+    });
+	}
+
+	if (fileErrors.length > 0) {
 		if (!errors[filePath]) {
 			errors[filePath] = [];
 		}
-		// Add the error message to the errors array for the file path
-		errors[filePath].push(errorMessages.missingJQueryScriptErrorMessage);
+		errors[filePath].push(...fileErrors);
 	}
 }

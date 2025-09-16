@@ -4,6 +4,7 @@ const titlesToCheck = config.titlesToCheck;
 const iframesToExclude = config.iframesToExclude;
 
 export function checkIframeTitles(document, filePath, errors) {
+  const fileErrors = [];
   // Get all iframes from the document
   let iframes = Array.from(document.querySelectorAll(config.iframeSelector));
 
@@ -45,12 +46,19 @@ export function checkIframeTitles(document, filePath, errors) {
       titlesToCheck.forEach(str => {
         // Exclude Youtube placeholder iframes from log since those have the default title attr
         if (!iframesToExclude.some(url => src && src.includes(url)) && title.includes(str)) {
-          if (!errors[filePath]) {
-            errors[filePath] = [];
-          }
-          errors[filePath].push(errorMessages.iframeTitleErrorMessage.replace("{str}", str));
+          fileErrors.push({
+            message: errorMessages.iframeTitleErrorMessage.replace("{str}", str),
+            node: iframe,
+          });
         }
       });
     }
   });
+
+  if (fileErrors.length > 0) {
+    if (!errors[filePath]) {
+      errors[filePath] = [];
+    }
+    errors[filePath].push(...fileErrors);
+  }
 }

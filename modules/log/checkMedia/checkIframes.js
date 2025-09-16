@@ -1,6 +1,7 @@
 import { config, errorMessages } from "../../../config.js";
 
 export function checkIframes(document, filePath, errors) {
+  const fileErrors = [];
   // Get all iframes from the document
   let iframes = Array.from(document.querySelectorAll(config.iframeSelector));
 
@@ -47,10 +48,17 @@ export function checkIframes(document, filePath, errors) {
     }
 
 		if (errorMessage) {
-      if (!errors[filePath]) {
-        errors[filePath] = [];
-      }
-      errors[filePath].push(errorMessage);
+      fileErrors.push({
+        message: errorMessage,
+        node: iframe,
+      });
     }
   });
+
+  if (fileErrors.length > 0) {
+    if (!errors[filePath]) {
+      errors[filePath] = [];
+    }
+    errors[filePath].push(...fileErrors);
+  }
 }
