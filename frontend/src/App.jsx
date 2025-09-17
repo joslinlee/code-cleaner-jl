@@ -10,6 +10,11 @@ export default function App() {
   const [files, setFiles] = useState([]); // Will store [{name, path, content?, _file?}]
   const [selectedPath, setSelectedPath] = useState(""); // Path of the selected file when clicked in tree
   const [currentCode, setCurrentCode] = useState(""); // Initialize to empty string
+  const [viewMode, setViewMode] = useState("editor"); // 'editor' or 'errors'
+  const [scanReport, setScanReport] = useState(null); // To store the scan report
+  const [isScanning, setIsScanning] = useState(false);
+  const [jumpToLine, setJumpToLine] = useState(null); // For jumping to a line from the error report
+  const [pendingJump, setPendingJump] = useState(null); // Holds a jump request until content is loaded
   const [isSaving, setIsSaving] = useState(false);
   const [toasts, setToasts] = useState([]);
 
@@ -64,18 +69,16 @@ export default function App() {
     const fd = new FormData();
     const processedFilesForState = [];
 
-    for (let i = 0; i < browserFileList.length; i++) {
-      const file = browserFileList[i];
-      
+    for (const file of browserFileList) {
       const filePathInTree = file.webkitRelativePath || file.name;
 
       // 1. Append the actual file content.
       // Multer will now default file.originalname to file.name or the browser's default.
-      fd.append("files", file); // <-- CHANGE 1: Removed filePathInTree from here
+      fd.append("files", file); 
 
       // 2. Explicitly append the full relative path as a separate field.
       // This is what Multer will collect into req.body.filePaths on the server.
-      fd.append("filePaths", filePathInTree); // <-- CHANGE 2: Added this new line
+      fd.append("filePaths", filePathInTree); 
 
       processedFilesForState.push({
         name: file.name,
@@ -164,19 +167,58 @@ export default function App() {
     refreshList();
   }, []);
 
+  // This effect triggers a jump-to-line *after* ensuring the file's content is loaded.
+  // This prevents a race condition where the jump happens before the new file is displayed.
+  useEffect(() => {
+    if (pendingJump && selectedFile?.path === pendingJump.path) {
+      // Check the master `files` array to see if the content is populated.
+      const fileInState = files.find(f => f.path === pendingJump.path);
+      if (fileInState?.content != null) {
+        // Content is loaded, so we can now trigger the actual jump.
+        setJumpToLine({ ...pendingJump, key: Date.now() });
+        setPendingJump(null); // Clear the pending request.
+      }
+    }
+  }, [files, pendingJump, selectedFile]);
+
   async function scan() {
-    const res = await fetch("/api/scan", { method: "POST" });
-    const data = await res.json();
-    if (data.ok) {
-      // Show the text report somewhere, or parse it later.
-      console.log(data.report);
+    if (isScanning) return;
+    setIsScanning(true);
+    setScanReport(null); // Clear previous report
+    setViewMode("errors"); // Switch to errors view to show progress/results
+
+    try {
+      const res = await fetch("/api/scan", { method: "POST" });
+
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "Could not read error response.");
+        console.error("Scan failed with status:", res.status, errorText);
+        throw new Error(`Scan failed: Server responded with status ${res.status}.`);
+      }
+
+      const data = await res.json();
+      console.log("Scan response data:", data);
+
+      if (data.ok) {
+        setScanReport(data);
+      } else {
+        throw new Error(data.error || "An unknown error occurred during the scan.");
+      }
+    } catch (err) {
+      console.error("An error occurred while scanning:", err);
+      setScanReport({ error: err.message });
+    } finally {
+      setIsScanning(false);
     }
   }
 
-  async function selectByPath(path) {
+  async function selectByPath(path, line = null) {
     setSelectedPath(path);
-    // The useEffect hook will now handle setting currentCode based on selectedFile
-    // and fetching if necessary. This keeps the logic centralized.
+		setViewMode("editor");
+    if (line) {
+      // Don't jump immediately. Set a pending request that the useEffect will handle once content is loaded.
+      setPendingJump({ path, line });
+    }
   }
 
   // --- Toast Management ---
@@ -231,7 +273,12 @@ export default function App() {
         <h1>Code Cleaner</h1>
         <div className="actions">
           <button onClick={() => setShowModal(true)}>Upload Folder</button>
-          <button onClick={scan} disabled={!files.length}>Scan Files</button>
+          <button onClick={() => setViewMode(prev => prev === 'editor' ? 'errors' : 'editor')}>
+            {viewMode === 'editor' ? 'View Errors' : 'View Editor'}
+          </button>
+          <button onClick={scan} disabled={!files.length || isScanning}>
+            {isScanning ? "Scanning..." : "Scan Files"}
+          </button>
           <button onClick={() => window.location.href = "/api/download"} disabled={!files.length}>
             Download Cleaned
           </button>
@@ -243,27 +290,95 @@ export default function App() {
         <FileTree files={files} onFileSelect={selectByPath} />
 
         {/* Main Panel 📝 */}
-        <main className="editor-panel">
-          {/* Display full path here for clarity */}
-          <h2>{selectedFile ? selectedFile.path : "No file selected"}</h2>
-          {/* Only render CodeEditor if selectedFile exists AND is a readable type */}
-          {selectedFile && /\.(html?|css|js|txt)$/i.test(selectedFile.path) ? (
-            <>
-              <CodeEditor code={currentCode} onChange={setCurrentCode} filePath={selectedFile?.path} />
-              <div className="editor-actions">
-                <button onClick={saveEdits} disabled={isSaving}>
+        {viewMode === 'editor' ? (
+          <main className="editor-panel">
+            {/* Display full path here for clarity */}
+            <h2>{selectedFile ? selectedFile.path : "No file selected"}</h2>
+            {/* Only render CodeEditor if selectedFile exists AND is a readable type */}
+            {selectedFile && /\.(html?|css|js|txt)$/i.test(selectedFile.path) ? (
+              <>
+                <CodeEditor code={currentCode} onChange={setCurrentCode} filePath={selectedFile?.path} jumpToLine={jumpToLine} />
+                <div className="editor-actions">
+                  <button onClick={saveEdits} disabled={isSaving}>
                   {isSaving ? 'Saving...' : 'Save'}
                 </button>
-                <button disabled>Save & Next</button>
+                  <button disabled>Save & Next</button>
+                </div>
+              </>
+            ) : (
+              // Message for non-readable files or no selection.
+              <p className="scan-text">
+                {selectedFile ? "This file type isn't previewable. Choose an HTML/CSS/JS/TXT file." : "No file selected"}
+              </p>
+            )}
+          </main>
+        ) : (
+          <main className="editor-panel">
+            <h2>Scan Report</h2>
+            <div className="codemirror-wrapper">
+              <div className="error-report">
+                {isScanning ? (
+                  <p className="scan-text">
+                    Scanning files, please wait...
+                  </p>
+                ) : scanReport === null ? (
+                  <p className="scan-text">
+                    No scan has been performed yet. Click 'Scan Files' to begin.
+                  </p>
+                ) : scanReport.error ? (
+                  <div className="structured-report">
+                    <h3>Scan Error</h3>
+                    <p className="scan-text scan-error">{scanReport.error}</p>
+                    <p className="scan-text">
+                      Check the browser's developer console for more details.
+                    </p>
+                  </div>
+                ) : scanReport.summary.issues === 0 ? (
+                  <p className="scan-text">
+                    No errors found! ✨
+                  </p>
+                ) : (
+                  <div className="structured-report">
+                    <h3>Scan Summary</h3>
+                    <ul>
+                      <li>Files Scanned: {scanReport.summary.filesScanned}</li>
+                      <li>Files with Issues: {scanReport.summary.filesWithIssues}</li>
+                      <li>Total Issues: {scanReport.summary.issues}</li>
+                    </ul>
+                    <hr />
+                    {Object.entries(scanReport.byFile).map(([filePath, errors]) => (
+                      <div key={filePath} className="report-file-section">
+                        <h4
+                          className="report-file-path"
+                          onClick={() => selectByPath(filePath)}
+                        >
+                          {filePath}
+                        </h4>
+                        <ul>
+                          {errors.map((error, index) => {
+                            // The backend now sends a structured error with a `line` property.
+                            const { message, line } = error;
+
+                            return (
+                              <li
+                                key={index}
+                                className={line ? "report-error-message" : ""}
+                                onClick={line ? () => selectByPath(filePath, line) : undefined}
+                                title={line ? `Click to jump to line ${line} in ${filePath}` : message}
+                              >
+                                {line ? `${message} (line ${line})` : message}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </>
-          ) : (
-            // Message for non-readable files or no selection.
-            <p style={{opacity:0.7}}>
-              {selectedFile ? "This file type isn't previewable. Choose an HTML/CSS/JS/TXT file." : "No file selected"}
-            </p>
-          )}
-        </main>
+            </div>
+          </main>
+        )}
       </div>
 
       {showModal && (

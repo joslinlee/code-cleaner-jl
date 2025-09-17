@@ -3,7 +3,7 @@
 import { config, errorMessages } from '../../../config.js';
 
 export function checkPanoptoContainer(document, filePath, errors) {
-
+	const fileErrors = [];
 	// Check all iframes
 	let iframes = Array.from(document.querySelectorAll(config.iframeSelector));
 
@@ -24,20 +24,26 @@ export function checkPanoptoContainer(document, filePath, errors) {
 			// Check if the div with the class 'media-object' is contained within a div with the class 'media-container'
 			if(mediaContainer && mediaContainer.tagName.toLowerCase() === config.divSelector && mediaContainer.classList.contains(config.mediaContainerSelector)) {
 			} else {
-				if (!errors[filePath]) {
-					errors[filePath] = [];
-				}
 				// If the div with the class 'media-object' is not contained within a div with the class 'media-container', add an error
-				errors[filePath].push(errorMessages.invalidPanoptoIframe);
+				fileErrors.push({
+					message: errorMessages.invalidPanoptoIframe,
+					node: iframe,
+				});
 			}
 		} else {
-			// No errors array for this file yet, create one
-			if (!errors[filePath]) {
-				errors[filePath] = [];
-			}
 			// If the iframe is not contained within a div with the class 'media-object', add an error
-			errors[filePath].push(errorMessages.invalidPanoptoIframeWrapperErrorMessage);
+			fileErrors.push({
+				message: errorMessages.invalidPanoptoIframeWrapperErrorMessage,
+				node: iframe,
+			});
 		}
 	};
-})
+	});
+
+	if (fileErrors.length > 0) {
+		if (!errors[filePath]) {
+			errors[filePath] = [];
+		}
+		errors[filePath].push(...fileErrors);
+	}
 }

@@ -1,13 +1,25 @@
 import { config, errorMessages } from "../../../../config.js";
 
-export function checkDoctype(document, filePath, errors) {
+export function checkDoctype(document, filePath, errors, htmlContent) {
+  const fileErrors = [];
+
   // Check if the document has a doctype and if it's HTML
-  if (!document.doctype || document.doctype.name.toLowerCase() !== config.htmlSelector) {
-    // Initialize the errors array for the file path if it doesn't exist
+  // Trim whitespace from the beginning of the file content.
+  const trimmedHtml = htmlContent.trimStart();
+
+  // Check if the content starts with a case-insensitive doctype declaration.
+  if (!trimmedHtml.toLowerCase().startsWith("<!doctype html>")) {
+    // If the doctype is missing, report the error on line 1.
+    fileErrors.push({
+			message: errorMessages.missingDoctypeErrorMessage,
+			line: 1,
+		});
+  }
+
+  if (fileErrors.length > 0) {
     if (!errors[filePath]) {
       errors[filePath] = [];
     }
-    // Add the error message to the errors array for the file path
-    errors[filePath].push(errorMessages.missingDoctypeErrorMessage);
+    errors[filePath].push(...fileErrors);
   }
 }

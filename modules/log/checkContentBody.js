@@ -15,7 +15,10 @@ export function checkContentBody(document, filePath, errors) {
     checkNestedElements(contentBody, nestedElements, errors, filePath);
 
     if (!checkValidParent(contentBody, validParents)) {
-      errors[filePath].push(errorMessages.contentBodyNotValidErrorMessage);
+      errors[filePath].push({
+				message: errorMessages.contentBodyNotValidErrorMessage,
+				node: contentBody,
+			});
     }
   });
 }

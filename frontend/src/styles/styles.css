@@ -93,20 +93,30 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* Base styles for primary action buttons (blue) */
 .fix-buttons button,
-.editor-actions button {
-  margin: 0.5rem 0.5rem 0.5rem 0;
+.editor-actions button,
+.upload-modal button {
   padding: 0.5rem 1rem;
   border: none;
   background-color: #2196f3;
   color: white;
   cursor: pointer;
   border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
+/* Hover state for primary buttons */
 .fix-buttons button:hover,
-.editor-actions button:hover {
+.editor-actions button:hover,
+.upload-modal button:hover {
   background-color: #1e88e5;
+}
+
+/* Specific margins for different button contexts */
+.fix-buttons button,
+.editor-actions button {
+  margin: 0.5rem 0.5rem 0.5rem 0;
 }
 
 .editor-actions {
@@ -166,16 +176,6 @@ body {
 
 .upload-modal button {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  background-color: #2196f3;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.upload-modal button:hover {
-  background-color: #1e88e5;
 }
 
 .file-tree { font-size: 14px; }
@@ -192,6 +192,78 @@ body {
   margin-left: 14px; /* This creates the indentation */
   border-left: 1px dashed #ccc; /* This creates the vertical line */
   padding-left: 8px;
+}
+
+.error-report pre {
+  padding: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.structured-report {
+  padding: 1rem;
+  text-align: left;
+}
+
+.structured-report h3 {
+  margin-top: 0;
+}
+
+.structured-report hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 1rem 0;
+}
+
+.scan-text {
+	opacity: 0.7;
+	padding: 1rem;
+}
+
+.scan-error {
+	color: red;
+}
+
+.report-file-section {
+  margin-bottom: 1rem;
+}
+
+.report-file-section h4.report-file-path {
+  margin: 0.5rem 0;
+  font-family: monospace;
+  cursor: pointer;
+  color: #2196f3; /* Using the same blue as your buttons */
+  text-decoration: underline;
+  display: inline-block; /* To prevent the clickable area from spanning the full width */
+}
+
+.report-file-section h4.report-file-path:hover {
+  color: #1e88e5;
+}
+
+.report-file-section ul {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.structured-report p {
+  line-height: 1.5;
+}
+
+.report-error-message {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.report-error-message:hover {
+  color: #2196f3;
+  text-decoration: underline;
+}
+
+.cm-highlighted-line {
+  background-color: #fff3c4;
+  transition: background-color 0.5s ease-out;
 }
 
 /* --- Toast Notifications --- */

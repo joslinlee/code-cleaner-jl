@@ -1,11 +1,28 @@
 import { useEffect, useRef } from "react";
-import { Compartment, EditorState } from "@codemirror/state";
+import { Compartment, EditorState, StateEffect, StateField } from "@codemirror/state";
 import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
-import { EditorView, keymap, lineNumbers } from "@codemirror/view";
+import { EditorView, keymap, lineNumbers, Decoration } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { javascript } from "@codemirror/lang-javascript";
+
+const lineHighlightEffect = StateEffect.define();
+
+const lineHighlightField = StateField.define({
+  create() { return Decoration.none; },
+  update(decorations, tr) {
+    decorations = decorations.map(tr.changes);
+    for (const e of tr.effects) {
+      if (e.is(lineHighlightEffect)) {
+        decorations = e.value ? Decoration.set([Decoration.line({ class: "cm-highlighted-line" }).range(e.value.from)]) : Decoration.none;
+      }
+    }
+    return decorations;
+  },
+	// f represents a function that takes a field and returns decorations, so in this instance it is lineHighlightField itself
+  provide: f => EditorView.decorations.from(f)
+});
 
 /**
  * A React component that wraps the CodeMirror 6 editor.
@@ -14,13 +31,15 @@ import { javascript } from "@codemirror/lang-javascript";
  * @param {string} props.code - The code content to display in the editor.
  * @param {function} props.onChange - A callback function that is called with the new code when the editor content changes.
  * @param {string} props.filePath - The path of the file being edited, used to determine the language for syntax highlighting.
+ * @param {object} props.jumpToLine - An object like { path, line, key } to trigger a jump to a specific line.
  */
-export default function CodeEditor({ code, onChange, filePath }) {
+export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
   // A React ref to hold the DOM element where CodeMirror will be mounted.
   const editorContainerRef = useRef(null);
   // A React ref to hold the CodeMirror EditorView instance. This allows us to interact
   // with the editor instance across different renders and effects.
   const editorViewRef = useRef(null);
+  const highlightTimeoutRef = useRef(null);
   // A ref to hold a CodeMirror Compartment for dynamically changing the language.
   // This is stored in a ref to ensure it's a single, stable instance.
   const languageCompartmentRef = useRef(new Compartment());
@@ -60,6 +79,7 @@ export default function CodeEditor({ code, onChange, filePath }) {
       doc: code,
       extensions: [
         lineNumbers(),
+        lineHighlightField,
         keymap.of(defaultKeymap),
         // The language compartment is initialized with the first file's language.
         languageCompartmentRef.current.of(getLanguageExtension(filePath)),
@@ -70,18 +90,6 @@ export default function CodeEditor({ code, onChange, filePath }) {
           if (viewUpdate.docChanged) {
             // Use the ref to call the latest onChange function, avoiding stale closures.
             onChangeRef.current(viewUpdate.state.doc.toString());
-          }
-        }),
-        // A basic theme to style the editor.
-        EditorView.theme({
-          "&": {
-            height: "100%",
-            fontSize: "14px",
-            fontFamily: "monospace",
-            backgroundColor: "white"
-          },
-          ".cm-content": {
-            padding: "1rem"
           }
         }),
       ],
@@ -132,6 +140,46 @@ export default function CodeEditor({ code, onChange, filePath }) {
     }
   }, [filePath]); // This effect runs whenever the 'filePath' prop changes.
 
+  // This effect handles jumping to a specific line when requested.
+  useEffect(() => {
+    const view = editorViewRef.current;
+
+    // Check if the view is ready, a jump is requested, and it's for the currently active file.
+    if (view && jumpToLine && jumpToLine.path === filePath) {
+      // Clear any pending highlight removal from a previous jump
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+        highlightTimeoutRef.current = null;
+      }
+
+      try {
+        // CodeMirror lines are 1-based. Get the line object.
+        const line = view.state.doc.line(jumpToLine.line);
+        // Dispatch a transaction to scroll to the line and set the cursor.
+        view.dispatch({
+          effects: [
+            EditorView.scrollIntoView(line.from, { y: "center" }),
+            lineHighlightEffect.of(line) // Add highlight effect
+          ],
+          selection: { anchor: line.from },
+        });
+
+        // Set a timeout to remove the highlight after a couple of seconds
+        highlightTimeoutRef.current = setTimeout(() => {
+          if (editorViewRef.current) {
+            editorViewRef.current.dispatch({ effects: lineHighlightEffect.of(null) });
+          }
+        }, 2000);
+      } catch (e) {
+        // This can happen if the line number is out of bounds (e.g., file was edited).
+        // It's safe to ignore, but we can log it for debugging.
+        console.error(`[CodeEditor DEBUG] Failed to jump to line ${jumpToLine.line}:`, e);
+      }
+    } // No else branch: if conditions aren't met, do nothing.
+		
+    // This effect should run whenever a new jump is requested.
+    // The `filePath` dependency ensures we only jump if the correct file is visible.
+  }, [jumpToLine, filePath]);
 
   // This is the target DOM element for CodeMirror. The `ref` connects it to our `editorContainerRef`.
   return <div ref={editorContainerRef} className="codemirror-wrapper" style={{ height: '100%' }} />;
