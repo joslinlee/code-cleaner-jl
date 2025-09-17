@@ -92,24 +92,6 @@ export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
             onChangeRef.current(viewUpdate.state.doc.toString());
           }
         }),
-        // A basic theme to style the editor.
-        EditorView.theme({
-          "&": {
-            height: "100%",
-            fontSize: "14px",
-            fontFamily: "monospace",
-            backgroundColor: "white"
-          },
-          ".cm-content": {
-            padding: "1rem"
-          },
-          // Style for the highlighted line, ensuring it's always visible.
-          // A yellow background is used for a noticeable but temporary highlight.
-          ".cm-highlighted-line": {
-            backgroundColor: "#fff2b2",
-            transition: "background-color 0.5s ease"
-          }
-        }),
       ],
     });
 

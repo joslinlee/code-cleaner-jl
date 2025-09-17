@@ -93,20 +93,30 @@ body {
   margin-bottom: 0.5rem;
 }
 
+/* Base styles for primary action buttons (blue) */
 .fix-buttons button,
-.editor-actions button {
-  margin: 0.5rem 0.5rem 0.5rem 0;
+.editor-actions button,
+.upload-modal button {
   padding: 0.5rem 1rem;
   border: none;
   background-color: #2196f3;
   color: white;
   cursor: pointer;
   border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
+/* Hover state for primary buttons */
 .fix-buttons button:hover,
-.editor-actions button:hover {
+.editor-actions button:hover,
+.upload-modal button:hover {
   background-color: #1e88e5;
+}
+
+/* Specific margins for different button contexts */
+.fix-buttons button,
+.editor-actions button {
+  margin: 0.5rem 0.5rem 0.5rem 0;
 }
 
 .editor-actions {
@@ -166,16 +176,6 @@ body {
 
 .upload-modal button {
   margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  border: none;
-  background-color: #2196f3;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.upload-modal button:hover {
-  background-color: #1e88e5;
 }
 
 .file-tree { font-size: 14px; }
