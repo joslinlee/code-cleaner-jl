@@ -1,8 +1,9 @@
 import "./styles/styles.css";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import CodeEditor from "./CodeEditor"; // Assuming you have this component
 import UploadModal from "./components/UploadModal";
 import FileTree from "./components/FileTree";
+import ToastContainer from "./components/ToastContainer";
 
 export default function App() {
   const [showModal, setShowModal] = useState(false);
@@ -14,6 +15,8 @@ export default function App() {
   const [isScanning, setIsScanning] = useState(false);
   const [jumpToLine, setJumpToLine] = useState(null); // For jumping to a line from the error report
   const [pendingJump, setPendingJump] = useState(null); // Holds a jump request until content is loaded
+  const [isSaving, setIsSaving] = useState(false);
+  const [toasts, setToasts] = useState([]);
 
   // selectedFile should derive from files and selectedPath, always using 'path' for lookup.
   const selectedFile = useMemo(() => files.find(f => f.path === selectedPath), [files, selectedPath]);
@@ -50,7 +53,7 @@ export default function App() {
       setCurrentCode(text); // Update editor with fetched content.
 
       // Cache it in memory for future selections.
-      setFiles(prev => prev.map(file =>
+      setFiles(prevFiles => prevFiles.map(file =>
         file.path === path ? { ...file, content: text } : file
       ));
     } catch (err) {
@@ -211,22 +214,60 @@ export default function App() {
 
   async function selectByPath(path, line = null) {
     setSelectedPath(path);
-    setViewMode("editor");
+		setViewMode("editor");
     if (line) {
       // Don't jump immediately. Set a pending request that the useEffect will handle once content is loaded.
       setPendingJump({ path, line });
     }
   }
 
-  function saveEdits() {
-    if (!selectedPath) return;
-    setFiles(prev => prev.map(f => (f.path === selectedPath ? { ...f, content: currentCode } : f)));
-    // TODO: send to backend to write to disk.
-    console.log("Saving edits for:", selectedPath); // For demonstration.
+  // --- Toast Management ---
+  const addToast = useCallback ((message, type = 'success') => {
+    const id = crypto.randomUUID(); // Unique ID for each toast
+    setToasts(prevToasts => [...prevToasts, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
+  }, []);
+
+  async function saveEdits() {
+    if (!selectedPath || isSaving) return;
+    setIsSaving(true);
+
+    try {
+      const response = await fetch('/api/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          path: selectedPath,
+          content: currentCode,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({})); // Avoid another error if body is not json
+        throw new Error(errorData.message || `Failed to save: ${response.statusText}`);
+      }
+
+      // Update local state only after successful save
+      setFiles(prevFiles => prevFiles.map(file => (file.path === selectedPath ? { ...file, content: currentCode } : file)));
+      
+      addToast('File saved successfully!', 'success');
+
+    } catch (err) {
+      console.error("Error saving file:", err);
+      addToast(`Error: ${err.message}`, 'error');
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
     <div className="app-container">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       {/* Top Bar 🔝 */}
       <header className="top-bar">
         <h1>Code Cleaner</h1>
@@ -258,7 +299,9 @@ export default function App() {
               <>
                 <CodeEditor code={currentCode} onChange={setCurrentCode} filePath={selectedFile?.path} jumpToLine={jumpToLine} />
                 <div className="editor-actions">
-                  <button onClick={saveEdits}>Save</button>
+                  <button onClick={saveEdits} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
                   <button disabled>Save & Next</button>
                 </div>
               </>
