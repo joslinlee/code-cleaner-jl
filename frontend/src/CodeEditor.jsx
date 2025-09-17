@@ -175,8 +175,8 @@ export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
         // It's safe to ignore, but we can log it for debugging.
         console.error(`[CodeEditor DEBUG] Failed to jump to line ${jumpToLine.line}:`, e);
       }
-    } else {
-    }
+    } // No else branch: if conditions aren't met, do nothing.
+		
     // This effect should run whenever a new jump is requested.
     // The `filePath` dependency ensures we only jump if the correct file is visible.
   }, [jumpToLine, filePath]);
