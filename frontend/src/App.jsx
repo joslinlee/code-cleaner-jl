@@ -66,9 +66,7 @@ export default function App() {
     const fd = new FormData();
     const processedFilesForState = [];
 
-    for (let i = 0; i < browserFileList.length; i++) {
-      const file = browserFileList[i];
-      
+    for (const file of browserFileList) {
       const filePathInTree = file.webkitRelativePath || file.name;
 
       // 1. Append the actual file content.
@@ -266,7 +264,7 @@ export default function App() {
               </>
             ) : (
               // Message for non-readable files or no selection.
-              <p style={{opacity:0.7}}>
+              <p className="scan-text">
                 {selectedFile ? "This file type isn't previewable. Choose an HTML/CSS/JS/TXT file." : "No file selected"}
               </p>
             )}
@@ -277,23 +275,23 @@ export default function App() {
             <div className="codemirror-wrapper">
               <div className="error-report">
                 {isScanning ? (
-                  <p style={{ opacity: 0.7, padding: '1rem' }}>
+                  <p className="scan-text">
                     Scanning files, please wait...
                   </p>
                 ) : scanReport === null ? (
-                  <p style={{ opacity: 0.7, padding: '1rem' }}>
+                  <p className="scan-text">
                     No scan has been performed yet. Click 'Scan Files' to begin.
                   </p>
                 ) : scanReport.error ? (
                   <div className="structured-report">
                     <h3>Scan Error</h3>
-                    <p style={{ color: 'red' }}>{scanReport.error}</p>
-                    <p style={{ opacity: 0.7 }}>
+                    <p className="scan-text scan-error">{scanReport.error}</p>
+                    <p className="scan-text">
                       Check the browser's developer console for more details.
                     </p>
                   </div>
                 ) : scanReport.summary.issues === 0 ? (
-                  <p style={{ opacity: 0.7, padding: '1rem' }}>
+                  <p className="scan-text">
                     No errors found! ✨
                   </p>
                 ) : (
