@@ -102,7 +102,7 @@ async function listHtmlFiles(root) {
     const ents = await fs.readdir(dir, { withFileTypes: true });
     for (const e of ents) {
       const full = path.join(dir, e.name);
-      const rel = path.join(base, e.name);
+      const rel = path.join(base, e.name).replace(/\\/g, "/"); // Normalize to forward slashes for consistency
       if (e.isDirectory()) await walk(full, rel);
       else if (/\.(html?|htm)$/i.test(e.name)) acc.push(rel);
     }
