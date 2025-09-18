@@ -88,6 +88,62 @@ body {
   margin-bottom: 2rem;
 }
 
+.editor-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.editor-title-bar h2 {
+  margin: 0; /* Override default h2 margin */
+}
+
+.error-count-badge {
+  background-color: #f44336; /* Red */
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: bold;
+}
+
+.editor-error-list {
+  background-color: #fffbe6; /* Light yellow for warning/info */
+  border: 1px solid #ffe58f;
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  max-height: 150px; /* Limit height and make it scrollable */
+  overflow-y: auto;
+  font-size: 0.9em;
+}
+
+.editor-error-list ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.editor-error-list li {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.editor-error-list li:last-child {
+  border-bottom: none;
+}
+
+.editor-error-list li.clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.editor-error-list li.clickable:hover {
+  color: #2196f3; /* Blue, consistent with other clickable errors */
+  text-decoration: underline;
+}
+
 .editor-panel h2 {
   font-size: 1.25rem;
   margin-bottom: 0.5rem;
@@ -296,6 +352,14 @@ body {
 
 .toast.error {
   background-color: rgba(244, 67, 54, .9); /* Red */
+}
+
+.toast.info {
+  background-color: rgba(33, 150, 243, .9); /* Blue */
+}
+
+.toast.warn {
+  background-color: rgba(255, 152, 0, .9); /* Orange */
 }
 
 .toast-message {
