@@ -79,6 +79,7 @@ export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
       doc: code,
       extensions: [
         lineNumbers(),
+        EditorView.lineWrapping,
         lineHighlightField,
         keymap.of(defaultKeymap),
         // The language compartment is initialized with the first file's language.
