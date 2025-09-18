@@ -1,5 +1,6 @@
 import fs from "fs-extra";
 import path from "path";
+import { fileURLToPath } from "url";
 import { JSDOM as jsdom } from "jsdom";
 import { decode } from "whatwg-encoding";
 
@@ -12,15 +13,31 @@ const LOG_TITLE = "Log Report for Course Review";
  * Scans all HTML/HTM files under inputDir, running the same checks as your gulp task,
  * but returns a structured JSON report + a text version for writing to _reports.
  */
-export async function runWebScan(inputDir) {
-  const htmlFiles = await listHtmlFiles(inputDir);
+export async function runWebScan(scanPath) {
+  const stats = await fs.stat(scanPath);
+  let filesToScan = [];
+
+  // Determine if we're scanning a directory or a single file.
+  if (stats.isDirectory()) {
+    filesToScan = await listHtmlFiles(scanPath);
+  } else if (stats.isFile()) {
+    // If it's a file, only scan it if it's an HTML file.
+    if (/\.(html?|htm)$/i.test(scanPath)) {
+      filesToScan.push(scanPath);
+    }
+  }
+
   const byFile = {}; // relPath -> [{ message }]
   const reportLines = [LOG_TITLE, new Date().toLocaleString(), "--------------------------------------------------"];
   let filesWithIssuesCount = 0;
   let totalIssueCount = 0;
   
-  for (const relPath of htmlFiles) {
-    const absPath = path.join(inputDir, relPath);
+  // The root directory for calculating relative paths for the report.
+  const rootDirForRelativePaths = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '_input');
+
+  for (const absPath of filesToScan) {
+    const relPath = path.relative(rootDirForRelativePaths, absPath).replace(/\\/g, "/");
+
     // Read file as a buffer to handle encoding detection and BOM stripping.
     const buffer = await fs.readFile(absPath);
     // Decode the buffer to a string. whatwg-encoding will strip the BOM
@@ -87,7 +104,7 @@ export async function runWebScan(inputDir) {
 
   return {
     summary: {
-      filesScanned: htmlFiles.length,
+      filesScanned: filesToScan.length,
       filesWithIssues: filesWithIssuesCount,
       issues: totalIssueCount,
     },
@@ -96,15 +113,22 @@ export async function runWebScan(inputDir) {
   };
 }
 
+/**
+ * Recursively finds all HTML files in a given directory.
+ * @param {string} root The absolute path to the directory to start walking.
+ * @returns {Promise<string[]>} A promise that resolves to an array of absolute file paths.
+ */
 async function listHtmlFiles(root) {
   const acc = [];
-  async function walk(dir, base = "") {
+  async function walk(dir) {
     const ents = await fs.readdir(dir, { withFileTypes: true });
     for (const e of ents) {
       const full = path.join(dir, e.name);
-      const rel = path.join(base, e.name).replace(/\\/g, "/"); // Normalize to forward slashes for consistency
-      if (e.isDirectory()) await walk(full, rel);
-      else if (/\.(html?|htm)$/i.test(e.name)) acc.push(rel);
+      if (e.isDirectory()) {
+        await walk(full);
+      } else if (/\.(html?|htm)$/i.test(e.name)) {
+        acc.push(full);
+      }
     }
   }
   await walk(root);
