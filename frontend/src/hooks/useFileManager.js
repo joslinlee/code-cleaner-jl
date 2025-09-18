@@ -27,9 +27,10 @@ export function useFileManager(addToast) {
       ));
     } catch (err) {
       console.error("Error fetching file content:", err);
-      setCurrentCode(`Error loading file: ${err.message}`);
+      addToast(`Error fetching file: ${err.message}`, 'error');
+			setCurrentCode(`Error loading file: ${err.message}`);
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     if (selectedFile) {
@@ -80,8 +81,9 @@ export function useFileManager(addToast) {
       }
     } catch (err) {
       console.error("Error refreshing file list:", err);
+			addToast(`Error refreshing file list: ${err.message}`, 'error');
     }
-  }, [selectedPath]);
+  }, [selectedPath, addToast]);
 
   const handleFiles = useCallback(async (browserFileList) => {
     if (!browserFileList || browserFileList.length === 0) return;
