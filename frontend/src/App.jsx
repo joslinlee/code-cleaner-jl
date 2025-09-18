@@ -129,6 +129,8 @@ export default function App() {
             addToast(`All ${oldErrorCount} issue(s) fixed in this file! File saved.`, 'success');
           } else if (issuesFixed > 0) {
             addToast(`${issuesFixed} issue(s) fixed. ${newErrorCount} remaining. File saved.`, 'warn');
+          } else if (issuesFixed < 0) {
+            addToast(`File saved, but ${-issuesFixed} new issue(s) were introduced. ${newErrorCount} total remaining.`, 'error');
           } else if (newErrorCount > 0) {
             addToast(`File saved, ${newErrorCount} error(s) still remaining.`, 'warn');
           } else {
