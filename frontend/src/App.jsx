@@ -4,162 +4,41 @@ import CodeEditor from "./CodeEditor"; // Assuming you have this component
 import UploadModal from "./components/UploadModal";
 import FileTree from "./components/FileTree";
 import ToastContainer from "./components/ToastContainer";
+import { useToasts } from "./hooks/useToasts.js";
+import { useFileManager } from "./hooks/useFileManager.js";
+import { useScanner } from "./hooks/useScanner.js";
 
 export default function App() {
   const [showModal, setShowModal] = useState(false);
-  const [files, setFiles] = useState([]); // Will store [{name, path, content?, _file?}]
-  const [selectedPath, setSelectedPath] = useState(""); // Path of the selected file when clicked in tree
-  const [currentCode, setCurrentCode] = useState(""); // Initialize to empty string
   const [viewMode, setViewMode] = useState("editor"); // 'editor' or 'errors'
-  const [scanReport, setScanReport] = useState(null); // To store the scan report
-  const [isScanning, setIsScanning] = useState(false);
   const [jumpToLine, setJumpToLine] = useState(null); // For jumping to a line from the error report
-  const [pendingJump, setPendingJump] = useState(null); // Holds a jump request until content is loaded
+  const [pendingJump, setPendingJump] = useState(null); // Holds a jump request until content is loaded  
   const [isSaving, setIsSaving] = useState(false);
-  const [toasts, setToasts] = useState([]);
+  const { toasts, addToast, removeToast } = useToasts();
 
-  // selectedFile should derive from files and selectedPath, always using 'path' for lookup.
-  const selectedFile = useMemo(() => files.find(f => f.path === selectedPath), [files, selectedPath]);
+  const {
+    files,
+    setFiles,
+    selectedPath,
+    setSelectedPath,
+    currentCode,
+    selectedFile,
+    hasUnsavedChanges,
+    handleEditorChange,
+    refreshList,
+    handleFiles,
+    handleSaveAll,
+  } = useFileManager(addToast);
 
-  // Use useEffect to react to selectedFile changes and update currentCode.
-  // This is the core change to make the editor dynamic.
-  useEffect(() => {
-    if (selectedFile) {
-      // If content is already in memory, use it.
-      if (selectedFile.content != null) {
-        setCurrentCode(selectedFile.content);
-      } else if (/\.(html?|css|js|txt)$/i.test(selectedFile.path)) {
-        // If it's a readable file type but content is not in memory, fetch it.
-        // This handles cases where refreshList populated `files` without content.
-        fetchFileContent(selectedFile.path);
-      } else {
-        // For non-readable file types (images, zips, etc.), clear the editor.
-        setCurrentCode("");
-      }
-    } else {
-      // No file selected, clear the editor.
-      setCurrentCode("");
+  const { scanReport, setScanReport, isScanning, scan, rescanFile } = useScanner(addToast);
+
+
+  const errorsForSelectedFile = useMemo(() => {
+    if (!scanReport?.byFile || !selectedPath || !scanReport.byFile[selectedPath]) {
+      return [];
     }
-  }, [selectedFile, files]); // Depend on selectedFile and files (to catch content updates).
-
-  // Helper function to fetch file content from the server.
-  async function fetchFileContent(path) {
-    try {
-      const res = await fetch(`/api/file?path=${encodeURIComponent(path)}`);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch ${path}: ${res.statusText}`);
-      }
-      const text = await res.text();
-      setCurrentCode(text); // Update editor with fetched content.
-
-      // Cache it in memory for future selections.
-      setFiles(prevFiles => prevFiles.map(file =>
-        file.path === path ? { ...file, content: text } : file
-      ));
-    } catch (err) {
-      console.error("Error fetching file content:", err);
-      setCurrentCode(`Error loading file: ${err.message}`); // Display error in editor.
-    }
-  }
-
-	// This function now handles BOTH processing for state AND uploading to server.
-  async function handleFiles(browserFileList) {
-    if (!browserFileList || browserFileList.length === 0) return;
-
-    const fd = new FormData();
-    const processedFilesForState = [];
-
-    for (const file of browserFileList) {
-      const filePathInTree = file.webkitRelativePath || file.name;
-
-      // 1. Append the actual file content.
-      // Multer will now default file.originalname to file.name or the browser's default.
-      fd.append("files", file); 
-
-      // 2. Explicitly append the full relative path as a separate field.
-      // This is what Multer will collect into req.body.filePaths on the server.
-      fd.append("filePaths", filePathInTree); 
-
-      processedFilesForState.push({
-        name: file.name,
-        path: filePathInTree,
-        _file: file,
-        content: undefined,
-      });
-    }
-
-    try {
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: fd,
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error(`Upload failed: ${uploadRes.statusText}`);
-      }
-			
-      const readableFiles = processedFilesForState.filter(({ path }) => /\.(html?|css|js|txt)$/i.test(path));
-      const filesWithContentPromises = readableFiles.map(async (item) => ({
-        ...item,
-        content: await item._file.text(),
-      }));
-      const filesWithContent = await Promise.all(filesWithContentPromises);
-
-      // Note: 'allFilesForState' was undefined in your provided code.
-      // It should be 'processedFilesForState'. Correcting this below.
-      const mergedFiles = processedFilesForState.map(item => { // Corrected variable name here
-        const found = filesWithContent.find(w => w.path === item.path);
-        return found ? found : item;
-      });
-
-      setFiles(mergedFiles);
-
-      const firstReadable = mergedFiles.find(f => /\.(html?|css|js|txt)$/i.test(f.path));
-      if (firstReadable) {
-        setSelectedPath(firstReadable.path);
-      } else if (mergedFiles.length > 0) {
-        setSelectedPath(mergedFiles[0].path);
-      } else {
-        setSelectedPath("");
-        setCurrentCode("");
-      }
-
-    } catch (err) {
-      console.error("Error during upload or processing:", err);
-    }
-  }
-	
-  async function refreshList() {
-    try {
-      const res = await fetch("/api/list");
-      const { files: serverFiles } = await res.json(); // Renamed to serverFiles to avoid confusion.
-
-      const formattedFiles = serverFiles.map(f => ({
-        name: f.path.split('/').pop(), // Correctly extract just the file/folder name.
-        path: f.path,
-        content: undefined, // Explicitly set content to undefined, as it's not loaded yet.
-      }));
-
-      setFiles(formattedFiles);
-
-      // Auto-select first readable file if nothing is selected or the selected file no longer exists.
-      if (!selectedPath || !formattedFiles.some(f => f.path === selectedPath)) {
-        const firstReadable = formattedFiles.find(f => /\.(html?|css|js|txt)$/i.test(f.path));
-        if (firstReadable) {
-          setSelectedPath(firstReadable.path);
-        } else if (formattedFiles.length > 0) {
-          setSelectedPath(formattedFiles[0].path);
-        } else {
-          setSelectedPath("");
-          setCurrentCode("");
-        }
-      }
-      // If selectedPath still points to an existing file, useEffect will handle loading its content
-      // if it's not already loaded.
-    } catch (err) {
-      console.error("Error refreshing file list:", err);
-    }
-  }
+    return scanReport.byFile[selectedPath];
+  }, [scanReport, selectedPath]);
 
   // Initial load: refresh the list to show any existing files.
   // This will run once when the component mounts.
@@ -181,36 +60,10 @@ export default function App() {
     }
   }, [files, pendingJump, selectedFile]);
 
-  async function scan() {
-    if (isScanning) return;
-    setIsScanning(true);
-    setScanReport(null); // Clear previous report
+  const handleScan = () => {
     setViewMode("errors"); // Switch to errors view to show progress/results
-
-    try {
-      const res = await fetch("/api/scan", { method: "POST" });
-
-      if (!res.ok) {
-        const errorText = await res.text().catch(() => "Could not read error response.");
-        console.error("Scan failed with status:", res.status, errorText);
-        throw new Error(`Scan failed: Server responded with status ${res.status}.`);
-      }
-
-      const data = await res.json();
-      console.log("Scan response data:", data);
-
-      if (data.ok) {
-        setScanReport(data);
-      } else {
-        throw new Error(data.error || "An unknown error occurred during the scan.");
-      }
-    } catch (err) {
-      console.error("An error occurred while scanning:", err);
-      setScanReport({ error: err.message });
-    } finally {
-      setIsScanning(false);
-    }
-  }
+    scan();
+  };
 
   async function selectByPath(path, line = null) {
     setSelectedPath(path);
@@ -221,49 +74,88 @@ export default function App() {
     }
   }
 
-  // --- Toast Management ---
-  const addToast = useCallback ((message, type = 'success') => {
-    const id = crypto.randomUUID(); // Unique ID for each toast
-    setToasts(prevToasts => [...prevToasts, { id, message, type }]);
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts(prevToasts => prevToasts.filter(toast => toast.id !== id));
-  }, []);
-
-  async function saveEdits() {
-    if (!selectedPath || isSaving) return;
-    setIsSaving(true);
+  async function handleSaveAndRescan() {
+    if (!selectedPath || isSaving || isScanning) return;
+    setIsSaving(true); // Use the same saving flag to disable both buttons
 
     try {
-      const response = await fetch('/api/save', {
+      // 1. Save the file first
+      const saveResponse = await fetch('/api/save', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          path: selectedPath,
-          content: currentCode,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: selectedPath, content: currentCode }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})); // Avoid another error if body is not json
-        throw new Error(errorData.message || `Failed to save: ${response.statusText}`);
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || `Failed to save: ${saveResponse.statusText}`);
       }
 
-      // Update local state only after successful save
-      setFiles(prevFiles => prevFiles.map(file => (file.path === selectedPath ? { ...file, content: currentCode } : file)));
-      
-      addToast('File saved successfully!', 'success');
+      // Update local state, reset unsaved changes flag, and show toast
+      setFiles(prevFiles => prevFiles.map(file => (file.path === selectedPath ? { ...file, content: currentCode, hasUnsavedChanges: false } : file)));
 
+      // 2. Now, rescan just that file using the hook
+      const scanData = await rescanFile(selectedPath);
+      if (!scanData) { // Error was already handled in the hook
+        return;
+      }
+      
+      if (scanData.ok) {
+        // 3. Merge the new partial report into the existing full report
+        // We read the previous report from the state variable in the render scope
+        // to avoid putting side effects (addToast) inside the setScanReport updater,
+        // which can cause double-invocations in React's Strict Mode.
+        const prevReport = scanReport;
+
+        if (!prevReport || prevReport.error) {
+          addToast('Run a full scan first to establish a baseline.', 'warn');
+          setScanReport(scanData); // Show partial report if no baseline exists
+        } else {
+          const newByFile = { ...prevReport.byFile };
+          const fileHasNewErrors = scanData.byFile && scanData.byFile[selectedPath] && scanData.byFile[selectedPath].length > 0;
+
+          if (fileHasNewErrors) {
+            newByFile[selectedPath] = scanData.byFile[selectedPath];
+          } else {
+            delete newByFile[selectedPath]; // File is now clean, remove from error list
+          }
+
+          // Recalculate summary and provide feedback
+          const oldErrorCount = prevReport.byFile[selectedPath]?.length || 0;
+          const newErrorCount = newByFile[selectedPath]?.length || 0;
+          const issuesFixed = oldErrorCount - newErrorCount;
+          
+          if (newErrorCount === 0 && oldErrorCount > 0) {
+            addToast(`All ${oldErrorCount} issue(s) fixed in this file! File saved.`, 'success');
+          } else if (issuesFixed > 0) {
+            addToast(`${issuesFixed} issue(s) fixed. ${newErrorCount} remaining. File saved.`, 'warn');
+          } else if (newErrorCount > 0) {
+            addToast(`File saved, ${newErrorCount} error(s) still remaining.`, 'warn');
+          } else {
+            addToast('File saved. No issues found.', 'info');
+          }
+          
+          const totalIssues = Object.values(newByFile).reduce((sum, errors) => sum + (errors?.length || 0), 0);
+          const newSummary = { ...prevReport.summary, filesWithIssues: Object.keys(newByFile).length, issues: totalIssues };
+          
+          setScanReport({ ...prevReport, summary: newSummary, byFile: newByFile });
+        }
+      } else {
+        throw new Error(scanData.error || 'An unknown error occurred during the rescan.');
+      }
     } catch (err) {
-      console.error("Error saving file:", err);
+      console.error('Error during save and rescan:', err);
       addToast(`Error: ${err.message}`, 'error');
     } finally {
       setIsSaving(false);
     }
   }
+
+  const handleSaveAllClick = async () => {
+    setIsSaving(true);
+    await handleSaveAll();
+    setIsSaving(false);
+  };
 
   return (
     <div className="app-container">
@@ -276,8 +168,11 @@ export default function App() {
           <button onClick={() => setViewMode(prev => prev === 'editor' ? 'errors' : 'editor')}>
             {viewMode === 'editor' ? 'View Errors' : 'View Editor'}
           </button>
-          <button onClick={scan} disabled={!files.length || isScanning}>
+          <button onClick={handleScan} disabled={!files.length || isScanning}>
             {isScanning ? "Scanning..." : "Scan Files"}
+          </button>
+          <button onClick={handleSaveAllClick} disabled={!hasUnsavedChanges || isSaving || isScanning}>
+            Save All
           </button>
           <button onClick={() => window.location.href = "/api/download"} disabled={!files.length}>
             Download Cleaned
@@ -287,22 +182,43 @@ export default function App() {
 
       <div className="main-content">
         {/* Sidebar showing nested folders 📁 */}
-        <FileTree files={files} onFileSelect={selectByPath} />
+        <FileTree files={files} onFileSelect={selectByPath} selectedPath={selectedPath} />
 
         {/* Main Panel 📝 */}
         {viewMode === 'editor' ? (
           <main className="editor-panel">
-            {/* Display full path here for clarity */}
-            <h2>{selectedFile ? selectedFile.path : "No file selected"}</h2>
+            <div className="editor-title-bar">
+              <h2>{selectedFile ? selectedFile.path : "No file selected"}</h2>
+              {errorsForSelectedFile.length > 0 && (
+                <span className="error-count-badge">
+                  {errorsForSelectedFile.length} {errorsForSelectedFile.length === 1 ? 'Error' : 'Errors'}
+                </span>
+              )}
+            </div>
+            {errorsForSelectedFile.length > 0 && (
+              <div className="editor-error-list">
+                <ul>
+                  {errorsForSelectedFile.map((error, index) => (
+                    <li
+                      key={index}
+                      className={error.line ? "clickable" : ""}
+                      onClick={error.line ? () => selectByPath(selectedPath, error.line) : undefined}
+                      title={error.line ? `Click to jump to line ${error.line}` : ''}
+                    >
+                      {error.line ? `Line ${error.line}: ` : ''}{error.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {/* Only render CodeEditor if selectedFile exists AND is a readable type */}
             {selectedFile && /\.(html?|css|js|txt)$/i.test(selectedFile.path) ? (
               <>
-                <CodeEditor code={currentCode} onChange={setCurrentCode} filePath={selectedFile?.path} jumpToLine={jumpToLine} />
+                <CodeEditor code={currentCode} onChange={handleEditorChange} filePath={selectedFile?.path} jumpToLine={jumpToLine} />
                 <div className="editor-actions">
-                  <button onClick={saveEdits} disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save'}
-                </button>
-                  <button disabled>Save & Next</button>
+                  <button onClick={handleSaveAndRescan} disabled={isSaving || isScanning}>
+                    {isSaving ? 'Processing...' : 'Save & Check for Fixes'}
+                  </button>
                 </div>
               </>
             ) : (
@@ -386,7 +302,7 @@ export default function App() {
           onClose={async (uploadedFiles) => {
             setShowModal(false);
             if (uploadedFiles && uploadedFiles.length > 0) {
-              // If files were uploaded via the modal, process them directly.
+              // The handleFiles function is now part of the useFileManager hook
               await handleFiles(uploadedFiles);
             } else {
               // Otherwise (modal closed, or no files selected), refresh from server.
