@@ -183,8 +183,20 @@ export default function App() {
       </header>
 
       <div className="main-content">
-        {/* Sidebar showing nested folders 📁 */}
-        <FileTree files={files} onFileSelect={selectByPath} selectedPath={selectedPath} />
+        {/* Sidebar Panel 📁 */}
+        <aside className="sidebar-panel">
+          {scanReport && typeof scanReport.summary?.issues === 'number' && (
+            <div
+              className="sidebar-scan-summary"
+              onClick={() => scanReport.summary.issues > 0 && setViewMode('errors')}
+              title={scanReport.summary.issues > 0 ? "Click to view error report" : "No issues found"}
+              style={{ cursor: scanReport.summary.issues > 0 ? 'pointer' : 'default' }}
+            >
+              <strong>Total Issues: {scanReport.summary.issues}</strong>
+            </div>
+          )}
+          <FileTree files={files} onFileSelect={selectByPath} selectedPath={selectedPath} />
+        </aside>
 
         {/* Main Panel 📝 */}
         {viewMode === 'editor' ? (
