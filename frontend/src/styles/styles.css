@@ -410,7 +410,7 @@ body {
 .sidebar-panel {
   display: flex;
   flex-direction: column;
-  background-color:#f0f0f0;
+  background-color: #f0f0f0;
 }
 
 .sidebar-scan-summary {
@@ -423,6 +423,6 @@ body {
   color: #333;
 }
 
-.sidebar-scan-summary:hover {
+.sidebar-scan-summary.clickable:hover {
   background-color: #e5e5e5;
 }
