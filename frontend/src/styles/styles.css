@@ -51,7 +51,6 @@ body {
 /* Sidebar */
 .sidebar {
   width: 350px;
-  background-color: #eeeeee;
   padding: 1rem;
   border-right: 1px solid #ccc;
   overflow-y: auto;
@@ -406,4 +405,24 @@ body {
     transform: translateX(100%);
     opacity: 0;
   }
+}
+
+.sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  background-color:#f0f0f0;
+}
+
+.sidebar-scan-summary {
+  padding: 10px 15px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+  font-size: 1em;
+  background-color: #f0f0f0;
+  user-select: none;
+  color: #333;
+}
+
+.sidebar-scan-summary:hover {
+  background-color: #e5e5e5;
 }
