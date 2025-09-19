@@ -423,6 +423,6 @@ body {
   color: #333;
 }
 
-.sidebar-scan-summary:hover {
+.sidebar-scan-summary.clickable:hover {
   background-color: #e5e5e5;
 }
