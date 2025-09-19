@@ -132,18 +132,79 @@ app.post('/api/save', async (req, res) => {
 });
 
 /**
+ * Saves multiple files from a batch request.
+ * Expects a JSON body: { files: [{ path: "path/to/file.html", content: "..." }, ...] }
+ */
+app.post('/api/save-all', async (req, res) => {
+    const { files } = req.body;
+
+    if (!Array.isArray(files) || files.length === 0) {
+        return res.status(400).json({ message: 'Missing or empty files array in request body.' });
+    }
+
+    try {
+        await Promise.all(files.map(async (file) => {
+            const { path: relativePath, content } = file;
+
+            if (!relativePath || content === undefined) {
+                throw new Error('Invalid file object in batch: missing path or content.');
+            }
+
+            const absoluteTargetPath = path.join(INPUT_DIR, relativePath);
+
+            if (!path.resolve(absoluteTargetPath).startsWith(path.resolve(INPUT_DIR))) {
+                // Log the attempt but throw a generic error to the client.
+                console.warn(`Forbidden: Attempted to write ${relativePath} outside of the allowed directory during batch save.`);
+                throw new Error('Forbidden: Attempted to write outside of the allowed directory.');
+            }
+
+            await fs.ensureDir(path.dirname(absoluteTargetPath));
+            await fs.writeFile(absoluteTargetPath, content, 'utf8');
+        }));
+
+        res.status(200).json({ message: 'All files saved successfully.' });
+    } catch (error) {
+        console.error(`Error during batch save:`, error);
+        res.status(500).json({ message: `Failed to save files: ${error.message}` });
+    }
+});
+
+/**
  * Triggers the Gulp "log" task, which is expected to perform the main processing
  * on the files in the `_input` directory. After the task completes, it reads the
  * generated report and sends it back to the client.
+ * Can optionally scan a single file if a `path` is provided in the request body.
  */
-app.post("/api/scan", async (_req, res) => {
+app.post("/api/scan", async (req, res) => {
 	try {
-    const { summary, byFile, reportText } = await runWebScan(INPUT_DIR);
+    const { path: singleFilePath } = req.body || {}; // Default to an empty object if body is not present
 
-    // keep parity: write the text file so terminal-people (or CI) can still read it
-    const reportPath = path.join(REPORTS_DIR, "log-output.txt");
-    await fs.ensureDir(REPORTS_DIR);
-    await fs.writeFile(reportPath, reportText, "utf8");
+    // Determine the target for the scan.
+    // If a specific file path is provided, use it. Otherwise, use the whole input directory.
+    const scanTarget = singleFilePath 
+        ? path.join(INPUT_DIR, singleFilePath)
+        : INPUT_DIR;
+
+    // Security check: ensure the path is within INPUT_DIR if provided
+    if (singleFilePath) {
+        const resolvedScanTarget = path.resolve(scanTarget);
+        const resolvedInputDir = path.resolve(INPUT_DIR);
+        if (!resolvedScanTarget.startsWith(resolvedInputDir)) {
+            return res.status(403).json({ ok: false, error: "Forbidden: Attempted to scan outside of the allowed directory." });
+        }
+        if (!(await fs.pathExists(scanTarget))) {
+            return res.status(404).json({ ok: false, error: "File to scan not found." });
+        }
+    }
+    
+    const { summary, byFile, reportText } = await runWebScan(scanTarget);
+
+    // Only write the full report to disk, not partial (single-file) scans.
+    if (!singleFilePath) {
+      const reportPath = path.join(REPORTS_DIR, "log-output.txt");
+      await fs.ensureDir(REPORTS_DIR);
+      await fs.writeFile(reportPath, reportText, "utf8");
+    }
 
     // return JSON for the React UI
     return res.json({
