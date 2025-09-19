@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const ToastShowDuration = 2000; // Duration to show the toast before starting to close
+const ToastShowDuration = 3000; // Duration to show the toast before starting to close
 const ToastCloseAnimationDuration = 400; // Duration of the close animation
 
 const Toast = ({ toast, onClose }) => {
