@@ -32,6 +32,9 @@ export default function App() {
 
   const { scanReport, setScanReport, isScanning, scan, rescanFile } = useScanner(addToast);
 
+  // This derived state is now reliable. It safely checks for the existence of
+  // scanReport and its properties before trying to access them.
+  const issuesDetected = useMemo(() => scanReport?.summary?.issues > 0, [scanReport]);
 
   const errorsForSelectedFile = useMemo(() => {
     if (!scanReport?.byFile || !selectedPath || !scanReport.byFile[selectedPath]) {
@@ -188,9 +191,9 @@ export default function App() {
           {scanReport && typeof scanReport.summary?.issues === 'number' && (
             <div
               className="sidebar-scan-summary"
-              onClick={() => scanReport.summary.issues > 0 && setViewMode('errors')}
-              title={scanReport.summary.issues > 0 ? "Click to view error report" : "No issues found"}
-              style={{ cursor: scanReport.summary.issues > 0 ? 'pointer' : 'default' }}
+              onClick={() => issuesDetected && setViewMode('errors')}
+              title={issuesDetected ? "Click to view error report" : "No issues found"}
+              style={{ cursor: issuesDetected ? 'pointer' : 'default' }}
             >
               <strong>Total Issues: {scanReport.summary.issues}</strong>
             </div>
