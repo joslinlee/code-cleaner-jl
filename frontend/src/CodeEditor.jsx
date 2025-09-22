@@ -10,9 +10,6 @@ import { javascript } from "@codemirror/lang-javascript";
 
 const lineHighlightEffect = StateEffect.define();
 
-const errorMark = new GutterMarker(
-  (view, line) => { return document.createTextNode("!"); }
-);
 const lineHighlightField = StateField.define({
   create() { return Decoration.none; },
   update(decorations, tr) {
@@ -203,26 +200,6 @@ export default function CodeEditor({ code, onChange, filePath, jumpToLine, error
   useEffect(() => {
     const view = editorViewRef.current;
     if (!view) return;
-
-    const diagnostics = (errors || []).map(error => {
-      // If the line number is invalid or doesn't exist, we can't create a diagnostic for it.
-      if (!error.line || error.line > view.state.doc.lines) {
-        return null;
-      }
-      const line = view.state.doc.line(error.line);
-      // Some lint errors might not have a specific column.
-      // Highlight the whole line, but don't include trailing whitespace.
-      const from = line.from;
-      const lineText = view.state.doc.sliceString(line.from, line.to);
-      const to = from + lineText.trimEnd().length;
-
-      return {
-        from: from,
-        to: to || from, // if line is empty, 'to' can be same as 'from'
-        severity: "error",
-        message: error.message,
-      };
-    }).filter(Boolean); // Remove any nulls from invalid line numbers
 
     view.dispatch({
       effects: [setErrorsEffect.of(errors || [])]
