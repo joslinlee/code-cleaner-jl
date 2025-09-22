@@ -97,11 +97,9 @@ export default function App() {
   const navigateToError = (index) => {
     if (!allErrors || index < 0 || index >= allErrors.length) return;
     const error = allErrors[index];
-    if (error) {
       setGlobalErrorIndex(index);
       // selectByPath will switch to the correct file and trigger the jump-to-line
       selectByPath(error.filePath, error.line);
-    }
   }
 
   async function handleSaveAndRescan() {
