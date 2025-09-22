@@ -15,6 +15,7 @@ export default function App() {
   const [pendingJump, setPendingJump] = useState(null); // Holds a jump request until content is loaded  
   const [isSaving, setIsSaving] = useState(false);
   const { toasts, addToast, removeToast } = useToasts();
+	const [globalErrorIndex, setGlobalErrorIndex] = useState(0);
 
   const {
     files,
@@ -35,6 +36,22 @@ export default function App() {
   // This derived state is now reliable. It safely checks for the existence of
   // scanReport and its properties before trying to access them.
   const issuesDetected = useMemo(() => scanReport?.summary?.issues > 0, [scanReport]);
+
+  const allErrors = useMemo(() => {
+    if (!scanReport?.byFile) return [];
+    // Create a flat list of all errors, including their file path
+    return Object.entries(scanReport.byFile).flatMap(([filePath, errors]) =>
+      errors.map(error => ({ ...error, filePath }))
+    );
+  }, [scanReport]);
+
+  // When the list of errors changes (i.e., after a rescan), make sure the index is still valid.
+  useEffect(() => {
+    // When the list of errors changes, ensure the index is still valid.
+    if (globalErrorIndex >= allErrors.length) {
+      setGlobalErrorIndex(Math.max(0, allErrors.length - 1));
+    }
+  }, [allErrors, globalErrorIndex]);
 
   const errorsForSelectedFile = useMemo(() => {
     if (!scanReport?.byFile || !selectedPath || !scanReport.byFile[selectedPath]) {
@@ -75,6 +92,14 @@ export default function App() {
       // Don't jump immediately. Set a pending request that the useEffect will handle once content is loaded.
       setPendingJump({ path, line });
     }
+  }
+
+  const navigateToError = (index) => {
+    if (!allErrors || index < 0 || index >= allErrors.length) return;
+    const error = allErrors[index];
+      setGlobalErrorIndex(index);
+      // selectByPath will switch to the correct file and trigger the jump-to-line
+      selectByPath(error.filePath, error.line);
   }
 
   async function handleSaveAndRescan() {
@@ -236,6 +261,17 @@ export default function App() {
                   <button onClick={handleSaveAndRescan} disabled={isSaving || isScanning}>
                     {isSaving ? 'Processing...' : 'Save & Check for Fixes'}
                   </button>
+                  {allErrors.length > 0 && (
+                    <div className="error-navigation">
+                      <button onClick={() => navigateToError(globalErrorIndex - 1)} disabled={globalErrorIndex <= 0 || isSaving || isScanning}>
+                        Previous Error
+                      </button>
+                      <span>{globalErrorIndex + 1} / {allErrors.length}</span>
+                      <button onClick={() => navigateToError(globalErrorIndex + 1)} disabled={globalErrorIndex >= allErrors.length - 1 || isSaving || isScanning}>
+                        Next Error
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
