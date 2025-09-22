@@ -248,7 +248,6 @@ export default function App() {
                       title={error.line ? `Click to jump to line ${error.line}` : ''}
                     >
                       {error.line ? `Line ${error.line}: ` : ''}{error.message}
-
                     </li>
                   ))}
                 </ul>
