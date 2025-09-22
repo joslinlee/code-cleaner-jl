@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Compartment, EditorState, StateEffect, StateField } from "@codemirror/state";
 import { syntaxHighlighting, defaultHighlightStyle } from "@codemirror/language";
-import { EditorView, keymap, lineNumbers, Decoration, GutterMarker } from "@codemirror/view";
-import { linter, lintGutter } from "@codemirror/lint";
+import { EditorView, keymap, lineNumbers, Decoration } from "@codemirror/view";
 import { defaultKeymap } from "@codemirror/commands";
 import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
