@@ -47,12 +47,11 @@ export default function App() {
 
   // When the list of errors changes (i.e., after a rescan), make sure the index is still valid.
   useEffect(() => {
-    if (allErrors.length > 0 && globalErrorIndex >= allErrors.length) {
-      setGlobalErrorIndex(allErrors.length - 1);
-    } else if (allErrors.length === 0) {
-      setGlobalErrorIndex(0);
+    // When the list of errors changes, ensure the index is still valid.
+    if (globalErrorIndex >= allErrors.length) {
+      setGlobalErrorIndex(Math.max(0, allErrors.length - 1));
     }
-  }, [allErrors.length, globalErrorIndex]);
+  }, [allErrors, globalErrorIndex]);
 
   const errorsForSelectedFile = useMemo(() => {
     if (!scanReport?.byFile || !selectedPath || !scanReport.byFile[selectedPath]) {
