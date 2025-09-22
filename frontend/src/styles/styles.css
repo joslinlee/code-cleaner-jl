@@ -456,11 +456,6 @@ body {
   padding: 0.3rem 0.6rem;
 }
 
-
-.cm-error-line {
-  background-color: #ffdddd; /* Light red */
-}
-
 .error-line {
   background-color: #ffdddd; /* Light red */
 }
