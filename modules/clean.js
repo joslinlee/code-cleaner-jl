@@ -12,8 +12,8 @@ import { removeContentBodyInnerTags } from "./clean/removeContentBodyInnerTags.j
 import { removeJQueryScript } from "./clean/removeJQueryScript.js";
 
 export function clean() {
-  gulp.task("clean", async () => {
-    gulp
+  gulp.task("clean", () => {
+    return gulp
       .src("_input/**/*.{html,htm}")
       .pipe(cleanTextElements())
       .pipe(cleanElementAttributes())
@@ -35,8 +35,8 @@ export function clean() {
       .pipe(gulp.dest("_output"));
   });
 
-  gulp.task("copy", async () => {
-    gulp.src(["_input/**/*", "!_input/**/*.{html,htm}"])
+  gulp.task("copy", () => {
+    return gulp.src(["_input/**/*", "!_input/**/*.{html,htm}"])
       .pipe(gulp.dest("_output"));
   });
 
