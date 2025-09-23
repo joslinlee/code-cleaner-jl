@@ -14,6 +14,7 @@ export default function App() {
   const [jumpToLine, setJumpToLine] = useState(null); // For jumping to a line from the error report
   const [pendingJump, setPendingJump] = useState(null); // Holds a jump request until content is loaded  
   const [isSaving, setIsSaving] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
   const { toasts, addToast, removeToast } = useToasts();
 	const [globalErrorIndex, setGlobalErrorIndex] = useState(0);
 
@@ -191,6 +192,26 @@ export default function App() {
     setIsSaving(false);
   };
 
+  const handleClean = async () => {
+    setIsCleaning(true);
+    addToast('Cleaning files...', 'info');
+    try {
+      const response = await fetch('/api/clean');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'An unknown error occurred during cleaning.');
+      }
+
+      addToast(data.message, 'success');
+    } catch (err) {
+      console.error('Cleaning failed:', err);
+      addToast(`Cleaning failed: ${err.message}`, 'error');
+    } finally {
+      setIsCleaning(false);
+    }
+  };
+
   return (
     <div className="app-container">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -202,14 +223,14 @@ export default function App() {
           <button onClick={() => setViewMode(prev => prev === 'editor' ? 'errors' : 'editor')}>
             {viewMode === 'editor' ? 'View Errors' : 'View Editor'}
           </button>
-          <button onClick={handleScan} disabled={!files.length || isScanning}>
+          <button onClick={handleScan} disabled={!files.length || isScanning || isCleaning}>
             {isScanning ? "Scanning..." : "Scan Files"}
           </button>
-          <button onClick={handleSaveAllClick} disabled={!hasUnsavedChanges || isSaving || isScanning}>
+          <button onClick={handleSaveAllClick} disabled={!hasUnsavedChanges || isSaving || isScanning || isCleaning}>
             Save All
           </button>
-          <button onClick={() => window.location.href = "/api/download"} disabled={!files.length}>
-            Download Cleaned
+          <button onClick={handleClean} disabled={!files.length || isCleaning || isScanning}>
+            {isCleaning ? 'Cleaning...' : 'Clean Code'}
           </button>
         </div>
       </header>
@@ -262,16 +283,16 @@ export default function App() {
               <>
                 <CodeEditor code={currentCode} onChange={handleEditorChange} filePath={selectedFile?.path} jumpToLine={jumpToLine} errors={errorsForSelectedFile} />
                 <div className="editor-actions">
-                  <button onClick={handleSaveAndRescan} disabled={isSaving || isScanning}>
+                  <button onClick={handleSaveAndRescan} disabled={isSaving || isScanning || isCleaning}>
                     {isSaving ? 'Processing...' : 'Save & Check for Fixes'}
                   </button>
                   {allErrors.length > 0 && (
                     <div className="error-navigation">
-                      <button onClick={() => navigateToError(globalErrorIndex - 1)} disabled={globalErrorIndex <= 0 || isSaving || isScanning}>
+                      <button onClick={() => navigateToError(globalErrorIndex - 1)} disabled={globalErrorIndex <= 0 || isSaving || isScanning || isCleaning}>
                         Previous Error
                       </button>
                       <span>{globalErrorIndex + 1} / {allErrors.length}</span>
-                      <button onClick={() => navigateToError(globalErrorIndex + 1)} disabled={globalErrorIndex >= allErrors.length - 1 || isSaving || isScanning}>
+                      <button onClick={() => navigateToError(globalErrorIndex + 1)} disabled={globalErrorIndex >= allErrors.length - 1 || isSaving || isScanning || isCleaning}>
                         Next Error
                       </button>
                     </div>
