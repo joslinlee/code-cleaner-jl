@@ -274,7 +274,7 @@ app.get("/api/clean", async (req, res) => {
     res.status(200).json({ ok: true, message: "Files cleaned successfully." });
   } catch (err) {
     console.error("Error during file cleaning:", err);
-    res.status(500).json({ ok: false, error: "Failed to clean files." });
+    res.status(500).json({ ok: false, error: err.message || "Failed to clean files." });
   }
 });
 
