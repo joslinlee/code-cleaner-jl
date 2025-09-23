@@ -57,11 +57,15 @@ export default function App() {
     if (!scanReport?.byFile || !selectedPath || !scanReport.byFile[selectedPath]) {
       return [];
     }
-    return scanReport.byFile[selectedPath];
+    const errors = scanReport.byFile[selectedPath];
+    // Sort errors by line number
+    return errors.slice().sort((errorA, errorB) => {
+      return (errorA.line || 0) - (errorB.line || 0); // Ensure that files without line numbers are still handled
+    });
   }, [scanReport, selectedPath]);
 
   // Initial load: refresh the list to show any existing files.
-  // This will run once when the component mounts.
+  // This will run once when the component mount
   useEffect(() => {
     refreshList();
   }, []);
@@ -69,9 +73,9 @@ export default function App() {
   // This effect triggers a jump-to-line *after* ensuring the file's content is loaded.
   // This prevents a race condition where the jump happens before the new file is displayed.
   useEffect(() => {
-    if (pendingJump && selectedFile?.path === pendingJump.path) {
+    if (pendingJump && selectedFile?.path === pendingJump.path) { 
       // Check the master `files` array to see if the content is populated.
-      const fileInState = files.find(f => f.path === pendingJump.path);
+      const fileInState = files.find(file => file.path === pendingJump.path);
       if (fileInState?.content != null) {
         // Content is loaded, so we can now trigger the actual jump.
         setJumpToLine({ ...pendingJump, key: Date.now() });
@@ -104,7 +108,7 @@ export default function App() {
 
   async function handleSaveAndRescan() {
     if (!selectedPath || isSaving || isScanning) return;
-    setIsSaving(true); // Use the same saving flag to disable both buttons
+    setIsSaving(true); // Use the same saving flag to disable both buttons 
 
     try {
       // 1. Save the file first
@@ -153,7 +157,7 @@ export default function App() {
           const newErrorCount = newByFile[selectedPath]?.length || 0;
           const issuesFixed = oldErrorCount - newErrorCount;
           
-          if (newErrorCount === 0 && oldErrorCount > 0) {
+          if (newErrorCount === 0 && oldErrorCount > 0) { 
             addToast(`All ${oldErrorCount} issue(s) fixed in this file! File saved.`, 'success');
           } else if (issuesFixed > 0) {
             addToast(`${issuesFixed} issue(s) fixed. ${newErrorCount} remaining. File saved.`, 'warn');
@@ -256,7 +260,7 @@ export default function App() {
             {/* Only render CodeEditor if selectedFile exists AND is a readable type */}
             {selectedFile && /\.(html?|css|js|txt)$/i.test(selectedFile.path) ? (
               <>
-                <CodeEditor code={currentCode} onChange={handleEditorChange} filePath={selectedFile?.path} jumpToLine={jumpToLine} />
+                <CodeEditor code={currentCode} onChange={handleEditorChange} filePath={selectedFile?.path} jumpToLine={jumpToLine} errors={errorsForSelectedFile} />
                 <div className="editor-actions">
                   <button onClick={handleSaveAndRescan} disabled={isSaving || isScanning}>
                     {isSaving ? 'Processing...' : 'Save & Check for Fixes'}

@@ -12,7 +12,7 @@ const lineHighlightEffect = StateEffect.define();
 const lineHighlightField = StateField.define({
   create() { return Decoration.none; },
   update(decorations, tr) {
-    decorations = decorations.map(tr.changes);
+   decorations = decorations.map(tr.changes);
     for (const e of tr.effects) {
       if (e.is(lineHighlightEffect)) {
         decorations = e.value ? Decoration.set([Decoration.line({ class: "cm-highlighted-line" }).range(e.value.from)]) : Decoration.none;
@@ -20,10 +20,58 @@ const lineHighlightField = StateField.define({
     }
     return decorations;
   },
-	// f represents a function that takes a field and returns decorations, so in this instance it is lineHighlightField itself
+  // f represents a function that takes a field and returns decorations, so in this instance it is lineHighlightField itself
   provide: f => EditorView.decorations.from(f)
 });
 
+// This effect will carry the raw error array into the editor state.
+const setErrorsEffect = StateEffect.define();
+
+// This state field will store the raw error array.
+const errorsField = StateField.define({
+  create: () => [],
+  update: (errors, tr) => {
+    for (const e of tr.effects) {
+      if (e.is(setErrorsEffect)) return e.value;
+    }
+    return errors;
+  }
+});
+
+// This helper function computes decorations from the raw errors and the current state.
+// It's called by the state field below.
+function computeErrorDecorations(errors, state) {
+  // Get unique line numbers from errors, and sort them. This is necessary because
+  // Decoration.set requires ranges to be sorted by position, and it avoids
+  // creating duplicate decorations for the same line.
+  const lineNumbers = [...new Set((errors || []).map(e => e.line))];
+  lineNumbers.sort((a, b) => a - b);
+
+  const decorations = lineNumbers.map(lineNumber => {
+    if (!lineNumber || lineNumber > state.doc.lines) {
+       return null;
+    }
+    try {
+      const line = state.doc.line(lineNumber);
+      return Decoration.line({ class: "error-line" }).range(line.from);
+    } catch (e) {
+      return null;
+    }
+  }).filter(Boolean);
+  return Decoration.set(decorations);
+}
+
+// This field is responsible for creating and updating the line decorations.
+const errorLineField = StateField.define({
+  create: (state) => computeErrorDecorations(state.field(errorsField, false) || [], state),
+  update(decorations, tr) {
+    if (tr.docChanged || tr.effects.some(e => e.is(setErrorsEffect))) {
+      return computeErrorDecorations(tr.state.field(errorsField), tr.state);
+    }
+    return decorations.map(tr.changes);
+  },
+  provide: f => EditorView.decorations.from(f)
+});
 /**
  * A React component that wraps the CodeMirror 6 editor.
  * It handles initialization, content updates, and language mode changes.
@@ -33,7 +81,7 @@ const lineHighlightField = StateField.define({
  * @param {string} props.filePath - The path of the file being edited, used to determine the language for syntax highlighting.
  * @param {object} props.jumpToLine - An object like { path, line, key } to trigger a jump to a specific line.
  */
-export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
+export default function CodeEditor({ code, onChange, filePath, jumpToLine, errors }) {
   // A React ref to hold the DOM element where CodeMirror will be mounted.
   const editorContainerRef = useRef(null);
   // A React ref to hold the CodeMirror EditorView instance. This allows us to interact
@@ -43,6 +91,8 @@ export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
   // A ref to hold a CodeMirror Compartment for dynamically changing the language.
   // This is stored in a ref to ensure it's a single, stable instance.
   const languageCompartmentRef = useRef(new Compartment());
+  // Compartment for dynamically providing diagnostics (i.e., errors from the backend scan).
+  const diagnosticsCompartmentRef = useRef(new Compartment());
 
   // This ref will hold the latest `onChange` function. This is a common pattern
   // to avoid re-creating the entire editor when the callback prop changes,
@@ -78,10 +128,14 @@ export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
     const initialEditorState = EditorState.create({
       doc: code,
       extensions: [
+        errorsField,
         lineNumbers(),
+        //lintGutter(),
         EditorView.lineWrapping,
+        errorLineField,
         lineHighlightField,
         keymap.of(defaultKeymap),
+        diagnosticsCompartmentRef.current.of([]),
         // The language compartment is initialized with the first file's language.
         languageCompartmentRef.current.of(getLanguageExtension(filePath)),
         syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
@@ -140,6 +194,16 @@ export default function CodeEditor({ code, onChange, filePath, jumpToLine }) {
       });
     }
   }, [filePath]); // This effect runs whenever the 'filePath' prop changes.
+
+  // This effect updates the editor's diagnostics (from the 'errors' prop) when they change.
+  useEffect(() => {
+    const view = editorViewRef.current;
+    if (!view) return;
+
+    view.dispatch({
+      effects: [setErrorsEffect.of(errors || [])]
+    });
+  }, [errors]);
 
   // This effect handles jumping to a specific line when requested.
   useEffect(() => {
