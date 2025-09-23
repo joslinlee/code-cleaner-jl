@@ -263,7 +263,7 @@ app.get("/api/list", async (_req, res) => {
 /**
  * Cleans the files from the `_input` directory and places them in the `_output` directory.
  */
-app.get("/api/clean", async (req, res) => {
+app.post("/api/clean", async (req, res) => {
   try {
     // First, ensure the output directory is completely empty. This prevents
     // files from previous runs from being included.
