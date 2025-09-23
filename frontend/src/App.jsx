@@ -196,7 +196,7 @@ export default function App() {
     setIsCleaning(true);
     addToast('Cleaning files...', 'info');
     try {
-      const response = await fetch('/api/clean');
+      const response = await fetch('/api/clean', { method: 'POST' });
       const data = await response.json();
 
       if (!response.ok) {
