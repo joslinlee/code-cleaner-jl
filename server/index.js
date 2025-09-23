@@ -260,24 +260,21 @@ app.get("/api/list", async (_req, res) => {
   }
 });
 
-
 /**
- * Creates a ZIP archive of the contents of the `_output` directory and streams it
- * to the client for download. This is how the user gets the final, cleaned course files.
+ * Cleans the files from the `_input` directory and places them in the `_output` directory.
  */
-app.get("/api/download", async (req, res) => {
+app.get("/api/clean", async (req, res) => {
   try {
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", "attachment; filename=cleaned-course.zip");
-
-    archive.on("error", err => res.status(500).send({ error: err.message }));
-    archive.pipe(res); // Pipe the archive stream directly to the HTTP response.
-    archive.directory(OUTPUT_DIR, false); // Using OUTPUT_DIR directly is cleaner
-    await archive.finalize();
+    // First, ensure the output directory is completely empty. This prevents
+    // files from previous runs from being included.
+    await fs.emptyDir(OUTPUT_DIR);
+    // Now, run the 'clean' script. This script reads from the `_input` directory,
+    // processes the files, and writes the cleaned versions to the `_output` directory.
+    await execa("npm", ["run", "clean"]);
+    res.status(200).json({ ok: true, message: "Files cleaned successfully." });
   } catch (err) {
-    console.error("Error creating zip archive:", err);
-    if (!res.headersSent) res.status(500).send({ error: "Failed to create zip file." });
+    console.error("Error during file cleaning:", err);
+    res.status(500).json({ ok: false, error: "Failed to clean files." });
   }
 });
 
