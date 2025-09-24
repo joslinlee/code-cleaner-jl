@@ -20,7 +20,7 @@ export const config = {
   iframesToExclude: ["https://www.youtube.com/embed/NpEaa2P7qZI?si=DFcFec4auMcyTLXX"],
 
 	// Array of elements that should have their 'style' attributes removed
-	noStyleElements: ["body, div, span, bold, em"],
+	noStyleElements: "body, div, span, b, em, strong",
 
 	// Remove 'style' attributes from specified elements
 	styleRemoval: "style",

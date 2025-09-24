@@ -1,3 +1,7 @@
+/**
+ * @file Defines a Gulp transformation to remove the `role="presentation"` attribute
+ * from any element where it is found.
+ */
 import { domTransform } from "../hooks/domTransform.js";
 import { config } from "../../config.js";
 

@@ -1,3 +1,8 @@
+/**
+ * @file Defines a Gulp transformation for cleaning <img> tags. It removes unnecessary
+ * attributes, ensures alt attributes exist, and fixes structural issues like
+ * images being incorrectly wrapped in <p> tags.
+ */
 import { domTransform } from "../hooks/domTransform.js";
 import { config } from "../../config.js";
 
