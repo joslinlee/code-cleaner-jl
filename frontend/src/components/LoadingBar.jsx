@@ -7,7 +7,7 @@ const LoadingBar = ({ isLoading }) => {
   }
 
   return (
-    <div className="loading-bar-container">
+    <div className="loading-bar-container" role="progressbar" aria-label="Loading">
       <div className="loading-bar"></div>
     </div>
   );
