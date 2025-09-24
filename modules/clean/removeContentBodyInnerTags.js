@@ -1,3 +1,9 @@
+/**
+ * @file Defines a Gulp transformation to remove specified wrapper tags (e.g., <header>,
+ * <footer>) from within a `.content-body` element, leaving their inner content
+ * intact. For example, it turns `<header><h1>Title</h1></header>` into `<h1>Title</h1>`.
+ */
+
 import { domTransform } from "../hooks/domTransform.js";
 import { config } from "../../config.js";
 
