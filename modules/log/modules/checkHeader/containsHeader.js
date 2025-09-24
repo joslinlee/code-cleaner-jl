@@ -2,7 +2,7 @@ import { config, errorMessages } from "../../../../config.js";
 
 export function containsHeader(document, filePath, errors) {
 	const fileErrors = [];
-	// Convert filePath to lowercase and check if it contains 'syllabus'
+	// Convert filePath to lowercase and check if it contains 'syllabus' and if it is the syllabus then skip it
 	if (filePath.toLowerCase().includes(config.syllabusSelector)) {
 		return;
 	}

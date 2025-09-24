@@ -1,3 +1,7 @@
+/**
+ * @file Defines a Gulp transformation that ensures the content of the <title> tag
+ * matches the content of the first <h1> tag on the page.
+ */
 import { domTransform } from "../hooks/domTransform.js";
 import { config } from "../../config.js";
 
