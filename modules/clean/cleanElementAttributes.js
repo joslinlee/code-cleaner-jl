@@ -10,7 +10,7 @@ export function cleanElementAttributes() {
   return domTransform((document) => {
     const discardElemAttributes = (element, ...attributes) =>
       attributes.forEach((attribute) => element.removeAttribute(attribute));
-    return document.querySelectorAll(config.noStyleElements[0]).forEach((elem) =>
+    return document.querySelectorAll(config.noStyleElements).forEach((elem) =>
       discardElemAttributes(elem, config.styleRemoval)
     );
   });
