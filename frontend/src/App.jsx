@@ -2,6 +2,7 @@ import "./styles/styles.css";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import CodeEditor from "./CodeEditor"; // Assuming you have this component
 import UploadModal from "./components/UploadModal";
+import LoadingBar from "./components/LoadingBar";
 import FileTree from "./components/FileTree";
 import ToastContainer from "./components/ToastContainer";
 import { useToasts } from "./hooks/useToasts.js";
@@ -234,6 +235,8 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <LoadingBar isLoading={isScanning || isCleaning || isSaving} />
 
       <div className="main-content">
         {/* Sidebar Panel 📁 */}
