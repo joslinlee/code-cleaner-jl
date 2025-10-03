@@ -5,9 +5,12 @@ import UploadModal from "./components/UploadModal";
 import LoadingBar from "./components/LoadingBar";
 import FileTree from "./components/FileTree";
 import ToastContainer from "./components/ToastContainer";
+import FileErrorGroup from "./components/FileErrorGroup";
 import { useToasts } from "./hooks/useToasts.js";
 import { useFileManager } from "./hooks/useFileManager.js";
 import { useScanner } from "./hooks/useScanner.js";
+
+const imageRegex = /\.(jpe?g|png|gif|svg)$/i;
 
 export default function App() {
   const [showModal, setShowModal] = useState(false);
@@ -54,7 +57,6 @@ export default function App() {
     const allFileEntries = Object.entries(scanReport.byFile);
     const codeErrors = [];
     const imageErrors = [];
-    const imageRegex = /\.(jpe?g|png|gif|svg)$/i;
 
     for (const [filePath, errors] of allFileEntries) {
       // An error is considered an image error if its file path matches the image extension regex.
@@ -362,55 +364,21 @@ export default function App() {
                     </ul>
                     <hr />
                     {codeErrorEntries.length > 0 && (
-                      <>
-                        <h3>Code Issues</h3>
-                        {codeErrorEntries.map(([filePath, errors]) => (
-                          <div key={filePath} className="report-file-section">
-                            <h4
-                              className="report-file-path"
-                              onClick={() => selectByPath(filePath)}
-                            >
-                              {filePath}
-                            </h4>
-                            <ul>
-                              {errors.map((error, index) => {
-                                const { message, line } = error;
-                                return (
-                                  <li
-                                    key={index}
-                                    className={line ? "report-error-message" : ""}
-                                    onClick={line ? () => selectByPath(filePath, line) : undefined}
-                                    title={line ? `Click to jump to line ${line} in ${filePath}` : message}
-                                  >
-                                    {line ? `${message} (line ${line})` : message}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        ))}
-                      </>
-                    )}
+											<FileErrorGroup 
+												title="Code Issues"
+												entries={codeErrorEntries}
+												isClickable={true}
+												onPathClick={selectByPath}
+											/>
+										)}
 
-                    {imageErrorEntries.length > 0 && (
-                      <>
-                        <h3>Image Size Issues</h3>
-                        {imageErrorEntries.map(([filePath, errors]) => (
-                          <div key={filePath} className="report-file-section">
-                            <h4 className="report-file-path-non-clickable">
-                              {filePath}
-                            </h4>
-                            <ul>
-                              {errors.map((error, index) => (
-                                <li key={index}>
-                                  {error.message}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </>
-                    )}
+										{imageErrorEntries.length > 0 && (
+											<FileErrorGroup 
+												title="Image Size Issues"
+												entries={imageErrorEntries}
+												isClickable={false}
+											/>
+										)}
                   </div>
                 )}
               </div>

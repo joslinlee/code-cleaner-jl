@@ -7,7 +7,7 @@ import multer from "multer";
 import { fileURLToPath } from "url";
 import { execa } from "execa"; // For running shell commands like Gulp
 import archiver from "archiver"; // For creating ZIP archives
-import { runWebScan } from "../modules/scanRunner.js"; // Custom module for scanning HTML files
+import { runWebScan, countAllFiles } from "../modules/scanRunner.js"; // Custom module for scanning HTML files
 
 // These lines are standard boilerplate for getting the current file's path and directory name in an ES Module context.
 const __filename = fileURLToPath(import.meta.url);
@@ -182,27 +182,36 @@ async function scanForLargeImages(dir) {
 
   async function walk(currentDir) {
     const entries = await fs.readdir(currentDir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(currentDir, entry.name);
-      if (entry.isDirectory()) {
-        await walk(fullPath);
-      } else if (/\.(jpe?g|png|gif|svg)$/i.test(entry.name)) {
-        const stats = await fs.stat(fullPath);
-        const fileSizeKB = Math.round(stats.size / 1024);
-        if (fileSizeKB > MAX_IMAGE_SIZE_KB) {
-          const relPath = path.relative(INPUT_DIR, fullPath).replace(/\\/g, "/");
-          const message = `Image is too large: ${fileSizeKB}KB (max ${MAX_IMAGE_SIZE_KB}KB)`;
-          if (!largeImages[relPath]) {
-            largeImages[relPath] = [];
-          }
-          largeImages[relPath].push({ message, line: null });
-          totalIssues++;
+    const results = await Promise.all(
+      entries.map(async (entry) => {
+        const fullPath = path.join(currentDir, entry.name);
+        if (entry.isDirectory()) {
+          return walk(fullPath);
         }
-      }
-    }
+        if (/\.(jpe?g|png|gif|svg)$/i.test(entry.name)) {
+          const stats = await fs.stat(fullPath);
+          const fileSizeKB = Math.round(stats.size / 1024);
+          if (fileSizeKB > MAX_IMAGE_SIZE_KB) {
+            const relPath = path.relative(INPUT_DIR, fullPath).replace(/\\/g, "/");
+            const message = `Image is too large: ${fileSizeKB}KB (max ${MAX_IMAGE_SIZE_KB}KB)`;
+            return { filePath: relPath, error: { message, line: null } };
+          }
+        }
+        return null;
+      })
+    );
+    return results.flat(Infinity).filter(Boolean);
   }
 
-  await walk(dir);
+  const allErrors = await walk(dir);
+
+  for (const { filePath, error } of allErrors) {
+    if (!largeImages[filePath]) {
+      largeImages[filePath] = [];
+    }
+    largeImages[filePath].push(error);
+  }
+  totalIssues = allErrors.length;
 
   if (totalIssues > 0) {
     reportLines.push("Large Image Report:");
@@ -248,21 +257,21 @@ app.post("/api/scan", async (req, res) => {
     
     const webScanResult = await runWebScan(scanTarget);
 
-    let finalSummary = webScanResult.summary;
-    let finalByFile = webScanResult.byFile;
+    let finalSummary = { ...webScanResult.summary };
+    let finalByFile = { ...webScanResult.byFile };
     let finalReportText = webScanResult.reportText;
 
     // If scanning the whole directory, also check for large images.
     if (!singleFilePath) {
+      const totalFileCount = await countAllFiles(INPUT_DIR);
+      finalSummary.filesScanned = totalFileCount;
+
       const imageScanResult = await scanForLargeImages(INPUT_DIR);
       if (imageScanResult.summary.issues > 0) {
         // Merge image scan results into the main report
         for (const [filePath, errors] of Object.entries(imageScanResult.byFile)) {
-          if (finalByFile[filePath]) {
-            finalByFile[filePath].push(...errors);
-          } else {
-            finalByFile[filePath] = errors;
-          }
+          const existingErrors = finalByFile[filePath] || [];
+          finalByFile[filePath] = [...existingErrors, ...errors];
         }
 
         finalSummary.issues += imageScanResult.summary.issues;
