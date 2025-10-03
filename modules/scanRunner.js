@@ -134,3 +134,22 @@ async function listHtmlFiles(root) {
   await walk(root);
   return acc;
 }
+
+/**
+ * Recursively counts all files in a directory.
+ * @param {string} dir The directory to start in.
+ * @returns {Promise<number>} The total number of files.
+ */
+export async function countAllFiles(dir) {
+    let fileCount = 0;
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            fileCount += await countAllFiles(fullPath);
+        } else {
+            fileCount++;
+        }
+    }
+    return fileCount;
+}
