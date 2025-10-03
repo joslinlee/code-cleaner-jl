@@ -47,6 +47,24 @@ export default function App() {
     );
   }, [scanReport]);
 
+  // Separate code errors from image errors for distinct rendering in the report view.
+  const [codeErrorEntries, imageErrorEntries] = useMemo(() => {
+    if (!scanReport?.byFile) return [[], []];
+
+    const allFileEntries = Object.entries(scanReport.byFile);
+    const codeErrors = [];
+    const imageErrors = [];
+    const imageRegex = /\.(jpe?g|png|gif|svg)$/i;
+
+    for (const [filePath, errors] of allFileEntries) {
+      // An error is considered an image error if its file path matches the image extension regex.
+      imageRegex.test(filePath)
+        ? imageErrors.push([filePath, errors])
+        : codeErrors.push([filePath, errors]);
+    }
+    return [codeErrors, imageErrors];
+  }, [scanReport]);
+
   // When the list of errors changes (i.e., after a rescan), make sure the index is still valid.
   useEffect(() => {
     // When the list of errors changes, ensure the index is still valid.
@@ -343,33 +361,56 @@ export default function App() {
                       <li>Total Issues: {scanReport.summary.issues}</li>
                     </ul>
                     <hr />
-                    {Object.entries(scanReport.byFile).map(([filePath, errors]) => (
-                      <div key={filePath} className="report-file-section">
-                        <h4
-                          className="report-file-path"
-                          onClick={() => selectByPath(filePath)}
-                        >
-                          {filePath}
-                        </h4>
-                        <ul>
-                          {errors.map((error, index) => {
-                            // The backend now sends a structured error with a `line` property.
-                            const { message, line } = error;
+                    {codeErrorEntries.length > 0 && (
+                      <>
+                        <h3>Code Issues</h3>
+                        {codeErrorEntries.map(([filePath, errors]) => (
+                          <div key={filePath} className="report-file-section">
+                            <h4
+                              className="report-file-path"
+                              onClick={() => selectByPath(filePath)}
+                            >
+                              {filePath}
+                            </h4>
+                            <ul>
+                              {errors.map((error, index) => {
+                                const { message, line } = error;
+                                return (
+                                  <li
+                                    key={index}
+                                    className={line ? "report-error-message" : ""}
+                                    onClick={line ? () => selectByPath(filePath, line) : undefined}
+                                    title={line ? `Click to jump to line ${line} in ${filePath}` : message}
+                                  >
+                                    {line ? `${message} (line ${line})` : message}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        ))}
+                      </>
+                    )}
 
-                            return (
-                              <li
-                                key={index}
-                                className={line ? "report-error-message" : ""}
-                                onClick={line ? () => selectByPath(filePath, line) : undefined}
-                                title={line ? `Click to jump to line ${line} in ${filePath}` : message}
-                              >
-                                {line ? `${message} (line ${line})` : message}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
-                    ))}
+                    {imageErrorEntries.length > 0 && (
+                      <>
+                        <h3>Image Size Issues</h3>
+                        {imageErrorEntries.map(([filePath, errors]) => (
+                          <div key={filePath} className="report-file-section">
+                            <h4 className="report-file-path-non-clickable">
+                              {filePath}
+                            </h4>
+                            <ul>
+                              {errors.map((error, index) => (
+                                <li key={index}>
+                                  {error.message}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
