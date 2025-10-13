@@ -32,7 +32,7 @@ export function checkIframes(document, filePath, errors) {
     } 
     // Check 2: All other iframes must have a simple div wrapper.
     else {
-      let parent = iframe.parentElement;
+      const parent = iframe.parentElement;
 
 			// Ensure the iframe is wrapped in a <div> that is NOT a content-body div.
       const hasDivWrapper = parent && parent.tagName.toLowerCase() === config.divSelector && !parent.classList.contains(config.contentBodyClassSelector);
