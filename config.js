@@ -85,6 +85,9 @@ export const config = {
 	// Content body selector
 	contentBodySelector: ".content-body",
 
+	// Content body text selector
+	contentTextBodySelector: "content-body",
+
 	// Script selector
 	scriptSelector: "script",
 
@@ -173,6 +176,9 @@ export const config = {
 	// Panopto iframe selector
 	panoptoIframeSelector: ["https://pima-cc.hosted.panopto.com"],
 
+	// YouTube iframe selector
+	youTubeUrlSelector: ["https://www.youtube.com", "https://youtube.com"],
+
 	// Depricated classes
 	deprecatedClasses: ["main", "main-two-column", "sidebar", "video-container"],
 
@@ -205,7 +211,7 @@ export const errorMessages = {
 	paragraphWrapperErrorMessage: "An <img> element is wrapped in a <p> tag.",
 
 	// iframe error message
-	h5pIframeErrorMessage: "Invalid iframes detected (h5p iframe not contained within \'div\' tag)",
+	iframeDivErrorMessage: "Invalid iframes detected (iframe not contained within \'div\' tag)",
 
 	// iframe errr message
 	iframeErrorMessage: "Invalid iframes detected (not contained within \'.media-container\')",
