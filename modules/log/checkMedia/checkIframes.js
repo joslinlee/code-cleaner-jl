@@ -9,31 +9,16 @@ export function checkIframes(document, filePath, errors) {
   iframes.forEach(iframe => {
     const src = iframe.getAttribute(config.sourceSelector) || '';
     const ariaLabel = iframe.getAttribute("aria-label")?.toLowerCase() || '';
-
-    const isH5P = config.h5pUrlSelector.some(url => src.includes(url));
     const isPanopto = config.panoptoIframeSelector.some(url => src.includes(url)) || ariaLabel.includes("panopto");
+    const isYouTube = config.youTubeUrlSelector.some(url => src.includes(url)) || ariaLabel.includes("youtube");
 
 		let errorMessage = null;
 
-    // Check 1: H5P iframes must have a personal <div> wrapper.
-    // This check excludes Panopto videos, which are handled by `checkPanoptoContainer.js`.
-    if (isH5P && !isPanopto) {
-      const parent = iframe.parentElement;
-      const isPersonallyWrapped = parent &&
-        parent.tagName.toLowerCase() === config.divSelector &&
-        parent.children.length === 1;
-
-				if (!isPersonallyWrapped) {
-					errorMessage = errorMessages.h5pIframeErrorMessage;
-				}
-    }
-    // Check 2: All other iframes (e.g., YouTube) must have the standard media wrapper.
-    // This is a catch-all that excludes H5P and Panopto iframes.
-    else if (!isH5P && !isPanopto) {
+    // Check 1: Panopto and YouTube iframes must have the standard media wrapper.
+    if (isPanopto || isYouTube) {
       const parent = iframe.parentElement;
       const grandParent = parent ? parent.parentElement : null;
 
-      // A correctly wrapped iframe should be in a .media-object div, which is in a .media-container div.
       const isCorrectlyWrapped = parent &&
         parent.tagName.toLowerCase() === config.divSelector &&
         parent.classList.contains(config.mediaObjectSelector) &&
@@ -41,10 +26,21 @@ export function checkIframes(document, filePath, errors) {
         grandParent.tagName.toLowerCase() === config.divSelector &&
         grandParent.classList.contains(config.mediaContainerSelector);
 
-				if (!isCorrectlyWrapped) {
-					// Use the more descriptive error message for wrapper issues.
-					errorMessage = errorMessages.iframeWrapperErrorMessage;
-				}
+      if (!isCorrectlyWrapped) {
+        errorMessage = errorMessages.iframeWrapperErrorMessage;
+      }
+    } 
+    // Check 2: All other iframes must have a simple div wrapper.
+    else {
+      let parent = iframe.parentElement;
+
+			// Ensure the iframe is wrapped in a <div> that is NOT a content-body div.
+      const hasDivWrapper = parent && parent.tagName.toLowerCase() === config.divSelector && !parent.classList.contains(config.contentTextBodySelector);
+
+			// If there is no valid div wrapper, log an error.
+      if (!hasDivWrapper) {
+        errorMessage = errorMessages.iframeDivErrorMessage;
+      }
     }
 
 		if (errorMessage) {
