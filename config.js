@@ -85,8 +85,8 @@ export const config = {
 	// Content body selector
 	contentBodySelector: ".content-body",
 
-	// Content body text selector
-	contentTextBodySelector: "content-body",
+	// Content body class selector
+	contentBodyClassSelector: "content-body",
 
 	// Script selector
 	scriptSelector: "script",

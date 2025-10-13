@@ -35,7 +35,7 @@ export function checkIframes(document, filePath, errors) {
       let parent = iframe.parentElement;
 
 			// Ensure the iframe is wrapped in a <div> that is NOT a content-body div.
-      const hasDivWrapper = parent && parent.tagName.toLowerCase() === config.divSelector && !parent.classList.contains(config.contentTextBodySelector);
+      const hasDivWrapper = parent && parent.tagName.toLowerCase() === config.divSelector && !parent.classList.contains(config.contentBodyClassSelector);
 
 			// If there is no valid div wrapper, log an error.
       if (!hasDivWrapper) {
