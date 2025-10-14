@@ -54,6 +54,18 @@ export default function App() {
     
   }, [scanReport]);
 
+  const globalErrorMap = useMemo(() => {
+    const map = new Map();
+    // Use the already sorted allErrors array
+    allErrors.forEach((error, index) => {
+      // Create a unique key: filePath::line::message
+      // Using '::' as a delimiter ensures the components are distinct
+      const key = `${error.filePath}::${error.line || 0}::${error.message}`;
+      map.set(key, index);
+    });
+    return map;
+  }, [allErrors]);
+
   // Separate code errors from image errors for distinct rendering in the report view.
   const [codeErrorEntries, imageErrorEntries] = useMemo(() => {
     if (!scanReport?.byFile) return [[], []];
@@ -293,22 +305,23 @@ export default function App() {
               <div className="editor-error-list">
                 <ul>
                   {errorsForSelectedFile.map((error, index) => {
-                    // Find the global index of this specific error
-                    const globalIndex = allErrors.findIndex(
-                      (globalError) =>
-                        globalError.filePath === selectedPath &&
-                        globalError.line === error.line &&
-                        globalError.message === error.message
-                    );
+                    
+                    // Create the unique key for the current local error
+                    const key = `${selectedPath}::${error.line || 0}::${error.message}`;
+                    
+                    // Use the map for O(1) lookup
+                    const globalIndex = globalErrorMap.get(key);
+
+                    // Ensure the error was found in the global list
+                    if (globalIndex === undefined) return null; 
 
                     return (
                       <li
-                        key={`${error.line}-${error.message}`}
+                        key={index}
                         className={error.line ? "clickable" : ""}
                         onClick={
                           error.line
-                            ? // Call navigateToError with the global index
-                              () => navigateToError(globalIndex)
+                            ? () => navigateToError(globalIndex)
                             : undefined
                         }
                         title={
