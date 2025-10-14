@@ -299,16 +299,34 @@ export default function App() {
             {errorsForSelectedFile.length > 0 && (
               <div className="editor-error-list">
                 <ul>
-                  {errorsForSelectedFile.map((error, index) => (
-                    <li
-                      key={index}
-                      className={error.line ? "clickable" : ""}
-                      onClick={error.line ? () => selectByPath(selectedPath, error.line) : undefined}
-                      title={error.line ? `Click to jump to line ${error.line}` : ''}
-                    >
-                      {error.line ? `Line ${error.line}: ` : ''}{error.message}
-                    </li>
-                  ))}
+                  {errorsForSelectedFile.map((error, index) => {
+                    // Find the global index of this specific error
+                    const globalIndex = allErrors.findIndex(
+                      (globalError) =>
+                        globalError.filePath === selectedPath &&
+                        globalError.line === error.line &&
+                        globalError.message === error.message
+                    );
+
+                    return (
+                      <li
+                        key={index}
+                        className={error.line ? "clickable" : ""}
+                        onClick={
+                          error.line
+                            ? // Call navigateToError with the global index
+                              () => navigateToError(globalIndex)
+                            : undefined
+                        }
+                        title={
+                          error.line ? `Click to jump to line ${error.line}` : ""
+                        }
+                      >
+                        {error.line ? `Line ${error.line}: ` : ""}{" "}
+                        {error.message}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
