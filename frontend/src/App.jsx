@@ -50,14 +50,7 @@ export default function App() {
     );
     
     // Sort the flat list of all errors
-    return errors.sort((a, b) => {
-      // Sort by filePath (alphabetically)
-      if (a.filePath < b.filePath) return -1;
-      if (a.filePath > b.filePath) return 1;
-      
-      // If filePaths are the same, sort by line number (numerically)
-      return (a.line || 0) - (b.line || 0);
-    });
+    return errors.sort((a, b) => a.filePath.localeCompare(b.filePath) || (a.line || 0) - (b.line || 0));
     
   }, [scanReport]);
 
