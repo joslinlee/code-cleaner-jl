@@ -44,10 +44,21 @@ export default function App() {
 
   const allErrors = useMemo(() => {
     if (!scanReport?.byFile) return [];
-    // Create a flat list of all errors, including their file path
-    return Object.entries(scanReport.byFile).flatMap(([filePath, errors]) =>
+    
+    const errors = Object.entries(scanReport.byFile).flatMap(([filePath, errors]) =>
       errors.map(error => ({ ...error, filePath }))
     );
+    
+    // Sort the flat list of all errors
+    return errors.sort((a, b) => {
+      // Sort by filePath (alphabetically)
+      if (a.filePath < b.filePath) return -1;
+      if (a.filePath > b.filePath) return 1;
+      
+      // If filePaths are the same, sort by line number (numerically)
+      return (a.line || 0) - (b.line || 0);
+    });
+    
   }, [scanReport]);
 
   // Separate code errors from image errors for distinct rendering in the report view.
