@@ -303,7 +303,7 @@ export default function App() {
 
                     return (
                       <li
-                        key={index}
+                        key={`${error.line}-${error.message}`}
                         className={error.line ? "clickable" : ""}
                         onClick={
                           error.line
