@@ -87,44 +87,55 @@ export default function App() {
 
   // When the list of errors changes (i.e., after a rescan), make sure the index is still valid.
   useEffect(() => {
-    // We only perform the complex index correction if a fix happened (isIndexPendingUpdate is true)
+    // Only proceed if a fix happened and an index update is pending
     if (!isIndexPendingUpdate) {
-      // Standard index validation when not in a pending state
-      if (globalErrorIndex >= allErrors.length) {
-        setGlobalErrorIndex(Math.max(0, allErrors.length - 1));
-      }
-      return;
+        // Standard index validation when not in a pending state
+        if (globalErrorIndex >= allErrors.length) {
+            setGlobalErrorIndex(Math.max(0, allErrors.length - 1));
+        }
+        return;
     }
     
     // Logic when isIndexPendingUpdate is TRUE (i.e., after a save/rescan)
     let finalIndexToSet = -1;
 
     if (lastSelectedErrorKey) {
-      const newIndex = globalErrorMap.get(lastSelectedErrorKey);
-      
-      if (newIndex !== undefined) {
-        // CASE A: The error we were on still exists (e.g., we edited the file but didn't fix the error).
-        // Set the new, correct index, and clear the flag.
-        finalIndexToSet = newIndex;
-        setIsIndexPendingUpdate(false); 
-      } else {
-        // CASE B: The error we were on was FIXED.
-        // The index we want is the minimum of the old index and the new maximum index.
-        // This is the index of the error that slid into the vacated slot.
-        finalIndexToSet = Math.max(0, Math.min(globalErrorIndex, allErrors.length - 1));
+        const newIndex = globalErrorMap.get(lastSelectedErrorKey);
         
-        // IMPORTANT: We DO NOT clear isIndexPendingUpdate yet.
-        // The flag remains TRUE to show the placeholder (--/N).
-        // We only clear it when the user explicitly navigates away from the placeholder.
-      }
+        // Extract the file path from the stored key
+        const fixedFilePath = lastSelectedErrorKey.split('::')[0];
+        const fileNowHasErrors = !!scanReport?.byFile?.[fixedFilePath];
+
+        if (newIndex !== undefined) {
+            // CASE A: The exact error we were on still exists.
+            // Set the new, correct index, and clear the pending flag.
+            finalIndexToSet = newIndex;
+            setIsIndexPendingUpdate(false); 
+        } else {
+            // CASE B: The exact error we were on was FIXED.
+
+            if (!fileNowHasErrors) {
+                // Scenario 1: ALL errors in the file were fixed. 
+                // The new 'next' error is the first one in the remaining list (index 0).
+                finalIndexToSet = 0;
+            } else {
+                // Scenario 2: Only the selected error was fixed, but others remain in the same file.
+                // Use the original logic to jump to the error that slid into the vacated slot.
+                // This correctly handles jumping to the next error in the *same* file.
+                finalIndexToSet = Math.max(0, Math.min(globalErrorIndex, allErrors.length - 1));
+            }
+            
+            // The flag remains TRUE to show the placeholder (--/N).
+        }
     }
     
     // Set the index only if we found a valid target
     if (finalIndexToSet !== -1 && globalErrorIndex !== finalIndexToSet) {
         setGlobalErrorIndex(finalIndexToSet);
     }
-    
-  }, [allErrors, globalErrorIndex, isIndexPendingUpdate, lastSelectedErrorKey, globalErrorMap]); // Add isIndexPendingUpdate to dependencies
+      
+  }, [allErrors, globalErrorIndex, isIndexPendingUpdate, lastSelectedErrorKey, globalErrorMap, scanReport]); 
+  // NOTE: Added scanReport to dependencies to access scanReport.byFile inside the hook.
 
   const errorsForSelectedFile = useMemo(() => {
     if (!scanReport?.byFile || !selectedPath || !scanReport.byFile[selectedPath]) {
