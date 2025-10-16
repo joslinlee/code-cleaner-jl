@@ -446,7 +446,7 @@ export default function App() {
                       </span>
                       <button 
                         onClick={() => handleNavButtonClick(1)} 
-                        disabled={globalErrorIndex >= allErrors.length - 1 || isSaving || isScanning || isCleaning}
+                        disabled={globalErrorIndex >= allErrors.length || isSaving || isScanning || isCleaning}
                       >
                         Next Error
                       </button>
