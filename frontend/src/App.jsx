@@ -21,6 +21,8 @@ export default function App() {
   const [isCleaning, setIsCleaning] = useState(false);
   const { toasts, addToast, removeToast } = useToasts();
 	const [globalErrorIndex, setGlobalErrorIndex] = useState(0);
+  const [isIndexPendingUpdate, setIsIndexPendingUpdate] = useState(false); // Flag to show placeholder in counter
+  const [lastSelectedErrorKey, setLastSelectedErrorKey] = useState(null); // Storing the error key to remember which error was selected before the save
 
   const {
     files,
@@ -44,11 +46,27 @@ export default function App() {
 
   const allErrors = useMemo(() => {
     if (!scanReport?.byFile) return [];
-    // Create a flat list of all errors, including their file path
-    return Object.entries(scanReport.byFile).flatMap(([filePath, errors]) =>
+    
+    const errors = Object.entries(scanReport.byFile).flatMap(([filePath, errors]) =>
       errors.map(error => ({ ...error, filePath }))
     );
+    
+    // Sort the flat list of all errors
+    return errors.sort((a, b) => a.filePath.localeCompare(b.filePath) || (a.line || 0) - (b.line || 0));
+    
   }, [scanReport]);
+
+  const globalErrorMap = useMemo(() => {
+    const map = new Map();
+    // Use the already sorted allErrors array
+    allErrors.forEach((error, index) => {
+      // Create a unique key: filePath::line::message
+      // Using '::' as a delimiter ensures the components are distinct
+      const key = `${error.filePath}::${error.line || 0}::${error.message}`;
+      map.set(key, index);
+    });
+    return map;
+  }, [allErrors]);
 
   // Separate code errors from image errors for distinct rendering in the report view.
   const [codeErrorEntries, imageErrorEntries] = useMemo(() => {
@@ -69,11 +87,55 @@ export default function App() {
 
   // When the list of errors changes (i.e., after a rescan), make sure the index is still valid.
   useEffect(() => {
-    // When the list of errors changes, ensure the index is still valid.
-    if (globalErrorIndex >= allErrors.length) {
-      setGlobalErrorIndex(Math.max(0, allErrors.length - 1));
+    // Only proceed if a fix happened and an index update is pending
+    if (!isIndexPendingUpdate) {
+        // Standard index validation when not in a pending state
+        if (globalErrorIndex >= allErrors.length) {
+            setGlobalErrorIndex(Math.max(0, allErrors.length - 1));
+        }
+        return;
     }
-  }, [allErrors, globalErrorIndex]);
+    
+    // Logic when isIndexPendingUpdate is TRUE (i.e., after a save/rescan)
+    let finalIndexToSet = -1;
+
+    if (lastSelectedErrorKey) {
+        const newIndex = globalErrorMap.get(lastSelectedErrorKey);
+        
+        // Extract the file path from the stored key
+        const fixedFilePath = lastSelectedErrorKey.split('::')[0];
+        const fileNowHasErrors = !!scanReport?.byFile?.[fixedFilePath];
+
+        if (newIndex !== undefined) {
+            // CASE A: The exact error we were on still exists.
+            // Set the new, correct index, and clear the pending flag.
+            finalIndexToSet = newIndex;
+            setIsIndexPendingUpdate(false); 
+        } else {
+            // CASE B: The exact error we were on was FIXED.
+
+            if (!fileNowHasErrors) {
+                // Scenario 1: ALL errors in the file were fixed. 
+                // The new 'next' error is the first one in the remaining list (index 0).
+                finalIndexToSet = 0;
+            } else {
+                // Scenario 2: Only the selected error was fixed, but others remain in the same file.
+                // Use the original logic to jump to the error that slid into the vacated slot.
+                // This correctly handles jumping to the next error in the *same* file.
+                finalIndexToSet = Math.max(0, Math.min(globalErrorIndex, allErrors.length - 1));
+            }
+            
+            // The flag remains TRUE to show the placeholder (--/N).
+        }
+    }
+    
+    // Set the index only if we found a valid target
+    if (finalIndexToSet !== -1 && globalErrorIndex !== finalIndexToSet) {
+        setGlobalErrorIndex(finalIndexToSet);
+    }
+      
+  }, [allErrors, globalErrorIndex, isIndexPendingUpdate, lastSelectedErrorKey, globalErrorMap, scanReport]); 
+  // NOTE: Added scanReport to dependencies to access scanReport.byFile inside the hook.
 
   const errorsForSelectedFile = useMemo(() => {
     if (!scanReport?.byFile || !selectedPath || !scanReport.byFile[selectedPath]) {
@@ -111,6 +173,31 @@ export default function App() {
     scan();
   };
 
+  // Handler that combines the index adjustment and navigation when the placeholder is active
+  const handleNavButtonClick = (direction) => {
+    if (isIndexPendingUpdate) {
+      // If index is pending, the current globalErrorIndex is already pointing 
+      // to the error that slid into the fixed one's spot.
+      // We resolve the placeholder state by navigating to that index.
+      // The direction only matters if the user clicks 'Prev' when index is 0.
+      
+      let targetIndex = globalErrorIndex;
+      
+      if (targetIndex === 0 && direction === -1) {
+          // If already at the first error, prevent navigation
+          return;
+      }
+      
+      // Resolve the index by calling navigateToError(current index)
+      // This will set isIndexPendingUpdate to false.
+      navigateToError(targetIndex); 
+      
+    } else {
+      // Standard navigation when the index is NOT pending
+      navigateToError(globalErrorIndex + direction);
+    }
+  };
+
   async function selectByPath(path, line = null) {
     setSelectedPath(path);
 		setViewMode("editor");
@@ -124,6 +211,14 @@ export default function App() {
     if (!allErrors || index < 0 || index >= allErrors.length) return;
     const error = allErrors[index];
       setGlobalErrorIndex(index);
+      
+      // Update the error key we are currently on
+      const key = `${error.filePath}::${error.line || 0}::${error.message}`;
+      setLastSelectedErrorKey(key); 
+      
+      // If the user navigates, the index is no longer pending/stale
+      setIsIndexPendingUpdate(false); 
+      
       // selectByPath will switch to the correct file and trigger the jump-to-line
       selectByPath(error.filePath, error.line);
   }
@@ -195,6 +290,16 @@ export default function App() {
           const newSummary = { ...prevReport.summary, filesWithIssues: Object.keys(newByFile).length, issues: totalIssues };
           
           setScanReport({ ...prevReport, summary: newSummary, byFile: newByFile });
+
+          // Signal that the global index is now stale/pending
+          // It's stale because one or more errors might have been removed.
+          if (issuesFixed > 0) { 
+            setIsIndexPendingUpdate(true);
+          } else {
+             // If errors were introduced or none were fixed, the index might still be okay, 
+             // but we still want to clear the pending flag if it was previously set.
+             setIsIndexPendingUpdate(false);
+          }
         }
       } else {
         throw new Error(scanData.error || 'An unknown error occurred during the rescan.');
@@ -288,16 +393,35 @@ export default function App() {
             {errorsForSelectedFile.length > 0 && (
               <div className="editor-error-list">
                 <ul>
-                  {errorsForSelectedFile.map((error, index) => (
-                    <li
-                      key={index}
-                      className={error.line ? "clickable" : ""}
-                      onClick={error.line ? () => selectByPath(selectedPath, error.line) : undefined}
-                      title={error.line ? `Click to jump to line ${error.line}` : ''}
-                    >
-                      {error.line ? `Line ${error.line}: ` : ''}{error.message}
-                    </li>
-                  ))}
+                  {errorsForSelectedFile.map((error, index) => {
+                    
+                    // Create the unique key for the current local error
+                    const key = `${selectedPath}::${error.line || 0}::${error.message}`;
+                    
+                    // Use the map for O(1) lookup
+                    const globalIndex = globalErrorMap.get(key);
+
+                    // Ensure the error was found in the global list
+                    if (globalIndex === undefined) return null; 
+
+                    return (
+                      <li
+                        key={index}
+                        className={error.line ? "clickable" : ""}
+                        onClick={
+                          error.line
+                            ? () => navigateToError(globalIndex)
+                            : undefined
+                        }
+                        title={
+                          error.line ? `Click to jump to line ${error.line}` : ""
+                        }
+                      >
+                        {error.line ? `Line ${error.line}: ` : ""}{" "}
+                        {error.message}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
@@ -311,11 +435,19 @@ export default function App() {
                   </button>
                   {allErrors.length > 0 && (
                     <div className="error-navigation">
-                      <button onClick={() => navigateToError(globalErrorIndex - 1)} disabled={globalErrorIndex <= 0 || isSaving || isScanning || isCleaning}>
+                      <button 
+                        onClick={() => handleNavButtonClick(-1)} 
+                        disabled={globalErrorIndex <= 0 || isSaving || isScanning || isCleaning}
+                      >
                         Previous Error
                       </button>
-                      <span>{globalErrorIndex + 1} / {allErrors.length}</span>
-                      <button onClick={() => navigateToError(globalErrorIndex + 1)} disabled={globalErrorIndex >= allErrors.length - 1 || isSaving || isScanning || isCleaning}>
+                      <span>
+                        {isIndexPendingUpdate ? '--' : globalErrorIndex + 1} / {allErrors.length}
+                      </span>
+                      <button 
+                        onClick={() => handleNavButtonClick(1)} 
+                        disabled={globalErrorIndex >= allErrors.length || isSaving || isScanning || isCleaning}
+                      >
                         Next Error
                       </button>
                     </div>
